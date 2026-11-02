@@ -12,6 +12,10 @@ import 'providers/disease_library_provider.dart';
 import 'providers/tips_provider.dart';
 import 'providers/settings_provider.dart';
 import 'routes/app_routes.dart';
+import 'services/auth_service.dart';
+import 'services/prediction_service.dart';
+import 'services/report_service.dart';
+import 'services/disease_service.dart';
 
 class CaneCareApp extends StatelessWidget {
   const CaneCareApp({super.key});
@@ -21,10 +25,21 @@ class CaneCareApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => ScanProvider()),
-        ChangeNotifierProvider(create: (_) => HistoryProvider()),
-        ChangeNotifierProvider(create: (_) => DiseaseLibraryProvider()),
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider(authService: RemoteAuthService()),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ScanProvider(
+            predictionService: RemotePredictionService(),
+            reportService: RemoteReportService(),
+          ),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => HistoryProvider(reportService: RemoteReportService()),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => DiseaseLibraryProvider(diseaseService: RemoteDiseaseService()),
+        ),
         ChangeNotifierProvider(create: (_) => TipsProvider()),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
       ],
@@ -59,25 +74,43 @@ class CaneCareApp extends StatelessWidget {
               appBarTheme: const AppBarTheme(
                 backgroundColor: AppColors.background,
                 elevation: 0,
-                scrolledUnderElevation: 0,
                 centerTitle: false,
-                iconTheme: IconThemeData(color: AppColors.darkGreen),
-              ),
-              cardTheme: CardThemeData(
-                color: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.circular(AppDimensions.radiusCard),
-                  side: const BorderSide(color: AppColors.border),
+                iconTheme: IconThemeData(color: AppColors.textMain),
+                titleTextStyle: TextStyle(
+                  color: AppColors.textMain,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  fontFamily: 'Inter',
                 ),
               ),
               elevatedButtonTheme: ElevatedButtonThemeData(
                 style: ElevatedButton.styleFrom(
-                  elevation: 2,
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  minimumSize: const Size(double.infinity, AppDimensions.buttonHeight),
                   shape: RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.circular(AppDimensions.radiusButton),
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusButton),
+                  ),
+                  textStyle: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Inter',
+                  ),
+                ),
+              ),
+              outlinedButtonTheme: OutlinedButtonThemeData(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  side: const BorderSide(color: AppColors.primary, width: 1.5),
+                  minimumSize: const Size(double.infinity, AppDimensions.buttonHeight),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusButton),
+                  ),
+                  textStyle: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Inter',
                   ),
                 ),
               ),
