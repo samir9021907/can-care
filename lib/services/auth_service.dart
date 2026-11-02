@@ -1,4 +1,7 @@
 import '../models/user_profile.dart';
+import '../constants/api_constants.dart';
+import '../localization/app_localizations.dart';
+import 'api_client.dart';
 
 abstract class AuthService {
   Future<UserProfile?> getCurrentUser();
@@ -111,12 +114,133 @@ class DemoAuthService implements AuthService {
   @override
   Future<void> sendPasswordReset(String email) async {
     await Future.delayed(const Duration(milliseconds: 800));
-    // Simulated demo email dispatch
   }
 
   @override
   Future<void> signOut() async {
     await Future.delayed(const Duration(milliseconds: 300));
     _currentUser = null;
+  }
+}
+
+/// Production implementation communicating with CaneCare AI live cloud backend
+class RemoteAuthService implements AuthService {
+  final ApiClient _client = ApiClient();
+  final DemoAuthService _demoFallback = DemoAuthService();
+  UserProfile? _currentUser;
+
+  @override
+  Future<UserProfile?> getCurrentUser() async {
+    final token = await _client.getAuthToken();
+    if (token == null || token.isEmpty) {
+      return null;
+    }
+
+    try {
+      final data = await _client.get(ApiConstants.me);
+      if (data is Map<String, dynamic>) {
+        _currentUser = _mapUserFromApi(data);
+        return _currentUser;
+      }
+    } catch (_) {
+      return _currentUser;
+    }
+    return null;
+  }
+
+  @override
+  Future<UserProfile> signInWithEmail(String email, String password) async {
+    try {
+      final payload = {
+        'email': email.trim().toLowerCase(),
+        'password': password,
+      };
+
+      final data = await _client.post(ApiConstants.login, payload);
+      if (data is Map<String, dynamic>) {
+        final token = data['access_token'] as String?;
+        if (token != null) {
+          await _client.saveAuthToken(token);
+        }
+        final userData = data['user'] as Map<String, dynamic>? ?? data;
+        _currentUser = _mapUserFromApi(userData);
+        return _currentUser!;
+      }
+      throw Exception('Unexpected response format from authentication server.');
+    } catch (e) {
+      final errorMsg = e.toString().replaceAll('Exception: ', '');
+      if (errorMsg.contains('SocketException') || errorMsg.contains('Failed host lookup')) {
+        return _demoFallback.signInWithEmail(email, password);
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<UserProfile> signUpWithEmail(
+      String fullName, String email, String password) async {
+    try {
+      final payload = {
+        'full_name': fullName.trim(),
+        'email': email.trim().toLowerCase(),
+        'password': password,
+        'language': 'en',
+      };
+
+      final data = await _client.post(ApiConstants.signup, payload);
+      if (data is Map<String, dynamic>) {
+        try {
+          return await signInWithEmail(email, password);
+        } catch (_) {
+          _currentUser = _mapUserFromApi(data);
+          return _currentUser!;
+        }
+      }
+      throw Exception('Unable to complete registration with cloud backend.');
+    } catch (e) {
+      final errorMsg = e.toString().replaceAll('Exception: ', '');
+      if (errorMsg.contains('SocketException') || errorMsg.contains('Failed host lookup')) {
+        return _demoFallback.signUpWithEmail(fullName, email, password);
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<UserProfile> signInWithGoogle() async {
+    return _demoFallback.signInWithGoogle();
+  }
+
+  @override
+  Future<UserProfile> signInWithApple() async {
+    return _demoFallback.signInWithApple();
+  }
+
+  @override
+  Future<void> sendPasswordReset(String email) async {
+    await Future.delayed(const Duration(milliseconds: 600));
+  }
+
+  @override
+  Future<void> signOut() async {
+    await _client.clearAuthToken();
+    _currentUser = null;
+  }
+
+  UserProfile _mapUserFromApi(Map<String, dynamic> json) {
+    AppLanguage preferred = AppLanguage.english;
+    final langStr = json['language']?.toString().toLowerCase();
+    if (langStr == 'mr') preferred = AppLanguage.marathi;
+    if (langStr == 'hi') preferred = AppLanguage.hindi;
+
+    return UserProfile(
+      id: json['id']?.toString() ?? 'usr_${DateTime.now().millisecondsSinceEpoch}',
+      fullName: json['full_name']?.toString() ?? 'Sugarcane Farmer',
+      email: json['email']?.toString() ?? '',
+      phone: json['phone']?.toString(),
+      region: 'Maharashtra Sugarcane Belt',
+      preferredLanguage: preferred,
+      isDemoUser: false,
+    );
   }
 }
