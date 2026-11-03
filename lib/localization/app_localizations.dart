@@ -913,6 +913,136 @@ class AppLocalizations {
       AppLanguage.marathi: 'लॉगआउट',
       AppLanguage.hindi: 'लॉगआउट',
     },
+    'edit_profile_title': {
+      AppLanguage.english: 'Edit Farmer Profile',
+      AppLanguage.marathi: 'शेतकरी प्रोफाइल संपादन',
+      AppLanguage.hindi: 'किसान प्रोफ़ाइल संपादन',
+    },
+    'personal_info_section': {
+      AppLanguage.english: 'Personal Information',
+      AppLanguage.marathi: 'वैयक्तिक माहिती',
+      AppLanguage.hindi: 'व्यक्तिगत जानकारी',
+    },
+    'farming_info_section': {
+      AppLanguage.english: 'Farm & Location',
+      AppLanguage.marathi: 'शेती व गाव तपशील',
+      AppLanguage.hindi: 'खेत और स्थान विवरण',
+    },
+    'crop_info_section': {
+      AppLanguage.english: 'Sugarcane Crop Details',
+      AppLanguage.marathi: 'ऊस पीक माहिती',
+      AppLanguage.hindi: 'गन्ना फसल विवरण',
+    },
+    'change_photo_prompt': {
+      AppLanguage.english: 'Tap to change photo or avatar',
+      AppLanguage.marathi: 'फोटो किंवा अवतार बदलण्यासाठी टॅप करा',
+      AppLanguage.hindi: 'फोटो या अवतार बदलने के लिए टैप करें',
+    },
+    'choose_photo_source': {
+      AppLanguage.english: 'Choose Profile Photo',
+      AppLanguage.marathi: 'प्रोफाइल फोटो निवडा',
+      AppLanguage.hindi: 'प्रोफ़ाइल फ़ोटो चुनें',
+    },
+    'choose_photo_source_sub': {
+      AppLanguage.english: 'Upload your photo or select a farmer avatar',
+      AppLanguage.marathi: 'स्वतःचा फोटो अपलोड करा किंवा शेतकरी अवतार निवडा',
+      AppLanguage.hindi: 'अपनी फ़ोटो अपलोड करें या किसान अवतार चुनें',
+    },
+    'source_camera': {
+      AppLanguage.english: 'Take Photo (Camera)',
+      AppLanguage.marathi: 'कॅमेऱ्याने फोटो काढा',
+      AppLanguage.hindi: 'कैमरे से फ़ोटो लें',
+    },
+    'source_gallery': {
+      AppLanguage.english: 'Choose from Gallery',
+      AppLanguage.marathi: 'गॅलरीतून निवडा',
+      AppLanguage.hindi: 'गैलरी से चुनें',
+    },
+    'source_avatar': {
+      AppLanguage.english: 'Choose Farmer Avatar',
+      AppLanguage.marathi: 'शेतकरी अवतार निवडा',
+      AppLanguage.hindi: 'किसान अवतार चुनें',
+    },
+    'remove_photo': {
+      AppLanguage.english: 'Remove Photo',
+      AppLanguage.marathi: 'फोटो काढा / मूळ अवतार',
+      AppLanguage.hindi: 'फ़ोटो हटाएं',
+    },
+    'field_full_name': {
+      AppLanguage.english: 'Full Name',
+      AppLanguage.marathi: 'पूर्ण नाव',
+      AppLanguage.hindi: 'पूरा नाम',
+    },
+    'field_mobile_number': {
+      AppLanguage.english: 'Mobile Number',
+      AppLanguage.marathi: 'मोबाईल नंबर',
+      AppLanguage.hindi: 'मोबाइल नंबर',
+    },
+    'field_email_address': {
+      AppLanguage.english: 'Email Address',
+      AppLanguage.marathi: 'ईमेल पत्ता',
+      AppLanguage.hindi: 'ईमेल पता',
+    },
+    'field_district_region': {
+      AppLanguage.english: 'District',
+      AppLanguage.marathi: 'जिल्हा',
+      AppLanguage.hindi: 'जिला',
+    },
+    'field_village_taluka': {
+      AppLanguage.english: 'Taluka / Village',
+      AppLanguage.marathi: 'तालुका / गाव',
+      AppLanguage.hindi: 'तहसील / गांव',
+    },
+    'field_sugarcane_area': {
+      AppLanguage.english: 'Sugarcane Area (Acres)',
+      AppLanguage.marathi: 'उसाचे क्षेत्र (एकर)',
+      AppLanguage.hindi: 'गन्ने का क्षेत्र (एकड़)',
+    },
+    'field_cane_variety': {
+      AppLanguage.english: 'Sugarcane Variety',
+      AppLanguage.marathi: 'लागवड केलेली ऊस जात',
+      AppLanguage.hindi: 'गन्ने की किस्म',
+    },
+    'field_irrigation_type': {
+      AppLanguage.english: 'Irrigation Method',
+      AppLanguage.marathi: 'पाणी व्यवस्थापन पद्धत',
+      AppLanguage.hindi: 'सिंचाई विधि',
+    },
+    'field_planting_season': {
+      AppLanguage.english: 'Planting Season',
+      AppLanguage.marathi: 'लागवड हंगाम',
+      AppLanguage.hindi: 'बुवाई का मौसम',
+    },
+    'save_profile_changes': {
+      AppLanguage.english: 'Save Changes',
+      AppLanguage.marathi: 'बदल जतन करा',
+      AppLanguage.hindi: 'बदलाव सहेजें',
+    },
+    'profile_saved_success': {
+      AppLanguage.english: 'Farmer profile updated successfully!',
+      AppLanguage.marathi: 'शेतकरी प्रोफाइल माहिती यशस्वीरीत्या जतन केली!',
+      AppLanguage.hindi: 'किसान प्रोफ़ाइल सफलतापूर्वक सहेजी गई!',
+    },
+    'name_required_error': {
+      AppLanguage.english: 'Please enter your name',
+      AppLanguage.marathi: 'कृपया तुमचे पूर्ण नाव टाका',
+      AppLanguage.hindi: 'कृपया अपना नाम दर्ज करें',
+    },
+    'phone_invalid_error': {
+      AppLanguage.english: 'Enter a valid 10-digit mobile number',
+      AppLanguage.marathi: 'कृपया १० अंकी योग्य मोबाईल नंबर टाका',
+      AppLanguage.hindi: 'कृपया मान्य 10 अंकों का मोबाइल नंबर दर्ज करें',
+    },
+    'my_farm_summary': {
+      AppLanguage.english: 'My Farm Details',
+      AppLanguage.marathi: 'माझे शेती तपशील',
+      AppLanguage.hindi: 'मेरे खेत का विवरण',
+    },
+    'edit': {
+      AppLanguage.english: 'Edit',
+      AppLanguage.marathi: 'बदला',
+      AppLanguage.hindi: 'बदलें',
+    },
     'preview_subtext': {
       AppLanguage.english: 'Make sure the leaf is clear and well-lit.',
       AppLanguage.marathi: 'फोटो स्पष्ट आणि चांगल्या प्रकाशात असल्याची खात्री करा.',

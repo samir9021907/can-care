@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../localization/app_localizations.dart';
+import '../providers/auth_provider.dart';
+import '../widgets/farmer_avatar_widget.dart';
 import '../models/disease_info.dart';
 import 'crop_tips_screen.dart';
 import 'disease_detail_screen.dart';
@@ -511,27 +514,24 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(width: 10),
 
-            // Profile Avatar: Light mint green with 'SR'
-            GestureDetector(
-              onTap: widget.onNavigateToProfile,
-              child: Container(
-                width: 42,
-                height: 42,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFCEF1DD),
-                  shape: BoxShape.circle,
-                ),
-                alignment: Alignment.center,
-                child: const Text(
-                  'SR',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF14451D),
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ),
+            // Profile Avatar: dynamic photo/preset avatar or initials
+            Builder(
+              builder: (ctx) {
+                AuthProvider? auth;
+                try {
+                  auth = Provider.of<AuthProvider>(ctx, listen: true);
+                } catch (_) {
+                  auth = null;
+                }
+                final user = auth?.currentUser;
+                final fullName = (user != null && user.fullName.isNotEmpty) ? user.fullName : 'Samir Rahane';
+                return FarmerAvatarWidget(
+                  avatarPath: user?.avatarPath,
+                  fullName: fullName,
+                  size: 42,
+                  onTap: widget.onNavigateToProfile,
+                );
+              },
             ),
           ],
         ),

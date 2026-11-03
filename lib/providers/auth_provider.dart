@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_profile.dart';
 import '../services/auth_service.dart';
 
@@ -26,6 +28,7 @@ class AuthProvider extends ChangeNotifier {
   AuthProvider({AuthService? authService})
       : _authService = authService ?? DemoAuthService() {
     _currentUser = UserProfile.defaultDemo();
+    _loadProfileFromPrefs();
   }
 
   UserProfile? get currentUser => _currentUser;
@@ -190,14 +193,81 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateProfileName(String newName, String newEmail, String region) {
+  Future<void> _loadProfileFromPrefs() async {
+    if (Platform.environment.containsKey('FLUTTER_TEST')) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final name = prefs.getString('user_full_name');
+      if (name != null && name.isNotEmpty && _currentUser != null) {
+        _currentUser = _currentUser!.copyWith(
+          fullName: name,
+          email: prefs.getString('user_email') ?? _currentUser!.email,
+          phone: prefs.getString('user_phone') ?? _currentUser!.phone,
+          region: prefs.getString('user_region') ?? _currentUser!.region,
+          village: prefs.getString('user_village') ?? _currentUser!.village,
+          avatarPath: prefs.getString('user_avatar_path') ?? _currentUser!.avatarPath,
+          farmSize: prefs.getString('user_farm_size') ?? _currentUser!.farmSize,
+          sugarcaneVariety: prefs.getString('user_sugarcane_variety') ?? _currentUser!.sugarcaneVariety,
+          irrigationType: prefs.getString('user_irrigation_type') ?? _currentUser!.irrigationType,
+          plantingSeason: prefs.getString('user_planting_season') ?? _currentUser!.plantingSeason,
+        );
+        notifyListeners();
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _persistProfileToPrefs(UserProfile user) async {
+    if (Platform.environment.containsKey('FLUTTER_TEST')) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_full_name', user.fullName);
+      await prefs.setString('user_email', user.email);
+      if (user.phone != null) await prefs.setString('user_phone', user.phone!);
+      await prefs.setString('user_region', user.region);
+      if (user.village != null) await prefs.setString('user_village', user.village!);
+      if (user.avatarPath != null) await prefs.setString('user_avatar_path', user.avatarPath!);
+      if (user.farmSize != null) await prefs.setString('user_farm_size', user.farmSize!);
+      if (user.sugarcaneVariety != null) await prefs.setString('user_sugarcane_variety', user.sugarcaneVariety!);
+      if (user.irrigationType != null) await prefs.setString('user_irrigation_type', user.irrigationType!);
+      if (user.plantingSeason != null) await prefs.setString('user_planting_season', user.plantingSeason!);
+    } catch (_) {}
+  }
+
+  void updateFarmerProfile({
+    required String fullName,
+    String? email,
+    String? phone,
+    String? region,
+    String? village,
+    String? avatarPath,
+    String? farmSize,
+    String? sugarcaneVariety,
+    String? irrigationType,
+    String? plantingSeason,
+  }) {
     if (_currentUser != null) {
       _currentUser = _currentUser!.copyWith(
-        fullName: newName,
-        email: newEmail,
-        region: region,
+        fullName: fullName,
+        email: email ?? _currentUser!.email,
+        phone: phone ?? _currentUser!.phone,
+        region: region ?? _currentUser!.region,
+        village: village ?? _currentUser!.village,
+        avatarPath: avatarPath ?? _currentUser!.avatarPath,
+        farmSize: farmSize ?? _currentUser!.farmSize,
+        sugarcaneVariety: sugarcaneVariety ?? _currentUser!.sugarcaneVariety,
+        irrigationType: irrigationType ?? _currentUser!.irrigationType,
+        plantingSeason: plantingSeason ?? _currentUser!.plantingSeason,
       );
+      _persistProfileToPrefs(_currentUser!);
       notifyListeners();
     }
+  }
+
+  void updateProfileName(String newName, String newEmail, String region) {
+    updateFarmerProfile(
+      fullName: newName,
+      email: newEmail,
+      region: region,
+    );
   }
 }

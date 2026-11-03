@@ -4,6 +4,7 @@ import '../localization/app_localizations.dart';
 import '../providers/auth_provider.dart';
 import '../providers/locale_provider.dart';
 import '../widgets/confirm_dialog.dart';
+import '../widgets/farmer_avatar_widget.dart';
 import 'edit_profile_screen.dart';
 import 'language_selection_screen.dart';
 import 'notifications_screen.dart';
@@ -52,7 +53,7 @@ class ProfileScreen extends StatelessWidget {
     // Default to Samir Rahane / Farmer if user is null or demo
     final fullName = (user != null && user.fullName.isNotEmpty) ? user.fullName : 'Samir Rahane';
     final userRole = loc.translate('profile_farmer');
-    final initials = fullName.split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join();
+    final region = user?.region;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7FAF5),
@@ -90,27 +91,17 @@ class ProfileScreen extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [Color(0xFFE8F5E9), Color(0xFFC8E6C9)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      initials.isNotEmpty ? initials : 'SR',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF1B5E20),
-                        letterSpacing: 0.5,
-                      ),
-                    ),
+                  FarmerAvatarWidget(
+                    avatarPath: user?.avatarPath,
+                    fullName: fullName,
+                    size: 56,
+                    showEditBadge: true,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+                      );
+                    },
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -125,21 +116,59 @@ class ProfileScreen extends StatelessWidget {
                             color: Color(0xFF14451D),
                           ),
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          userRole,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w400,
-                            color: Color(0xFF7A9280),
-                          ),
+                        const SizedBox(height: 3),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE8F5E9),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                userRole,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF2E7D32),
+                                ),
+                              ),
+                            ),
+                            if (region != null && region.isNotEmpty) ...[
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  region,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF7A9280),
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                       ],
                     ),
                   ),
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined, size: 20, color: Color(0xFF2E7D32)),
+                    tooltip: loc.translate('edit'),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
+            const SizedBox(height: 12),
+
+            // Farm & Sugarcane Overview Pill Card (Live farm context)
+            _buildFarmSummaryCard(context, loc, user),
             const SizedBox(height: 16),
 
             // Grouped Menu Container (Figma Screen 15)
@@ -341,6 +370,163 @@ class ProfileScreen extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildFarmSummaryCard(
+    BuildContext context,
+    AppLocalizations loc,
+    dynamic user,
+  ) {
+    final variety = user?.sugarcaneVariety ?? 'Co 86032 (Nira)';
+    final rawSize = user?.farmSize ?? '5.0';
+    final area = '$rawSize ${loc.translate('field_sugarcane_area').split('(').last.replaceAll(')', '').trim()}';
+    final irrigation = user?.irrigationType ?? 'ठिबक सिंचन';
+    final location = user?.village != null && (user!.village as String).isNotEmpty
+        ? user.village as String
+        : (user?.region ?? 'कोल्हापूर, महाराष्ट्र');
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE8EFE5), width: 1.0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.grass_rounded, size: 16, color: Color(0xFF2E7D32)),
+              const SizedBox(width: 6),
+              Text(
+                loc.translate('my_farm_summary'),
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF14451D),
+                ),
+              ),
+              const Spacer(),
+              InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+                  );
+                },
+                child: Text(
+                  loc.translate('edit'),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF2E7D32),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _buildFarmChip(
+                  icon: Icons.spa_outlined,
+                  label: loc.translate('field_cane_variety'),
+                  value: variety,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildFarmChip(
+                  icon: Icons.square_foot_rounded,
+                  label: loc.translate('field_sugarcane_area'),
+                  value: area,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _buildFarmChip(
+                  icon: Icons.water_drop_outlined,
+                  label: loc.translate('field_irrigation_type'),
+                  value: irrigation,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildFarmChip(
+                  icon: Icons.location_on_outlined,
+                  label: loc.translate('field_village_taluka'),
+                  value: location,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFarmChip({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7FAF5),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFE8EFE5)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 14, color: const Color(0xFF2E7D32)),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF7A9280),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF14451D),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

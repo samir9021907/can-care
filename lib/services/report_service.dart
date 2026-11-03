@@ -30,7 +30,7 @@ class RemoteReportService implements ReportService {
     try {
       final token = await _apiClient.getAuthToken();
       if (token == null || token.isEmpty) {
-        return _fallbackService.getReports();
+        return await _fallbackService.getReports();
       }
 
       final res = await _apiClient.get(
