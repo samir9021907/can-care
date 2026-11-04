@@ -331,9 +331,23 @@ class AuthProvider extends ChangeNotifier {
         irrigationType: irrigationType ?? _currentUser!.irrigationType,
         plantingSeason: plantingSeason ?? _currentUser!.plantingSeason,
       );
-      _persistProfileToPrefs(_currentUser!);
-      notifyListeners();
+    } else {
+      _currentUser = UserProfile(
+        id: 'usr_',
+        fullName: fullName,
+        email: email ?? 'farmer@canecare.ai',
+        phone: phone,
+        region: region ?? 'Maharashtra, India',
+        village: village,
+        avatarPath: avatarPath,
+        farmSize: farmSize,
+        sugarcaneVariety: sugarcaneVariety,
+        irrigationType: irrigationType,
+        plantingSeason: plantingSeason,
+      );
     }
+    _persistProfileToPrefs(_currentUser!);
+    notifyListeners();
   }
 
 
