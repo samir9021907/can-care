@@ -600,7 +600,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         ),
                       ),
                       validator: (v) {
-                        if (v == null || v.trim().length < 10) {
+                        if (v != null && v.trim().isNotEmpty && v.trim().length < 10) {
                           return loc.translate('phone_invalid_error');
                         }
                         return null;
