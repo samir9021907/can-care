@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class FarmerAvatarPreset {
@@ -37,7 +38,7 @@ class FarmerAvatarWidget extends StatelessWidget {
   const FarmerAvatarWidget({
     super.key,
     this.avatarPath,
-    this.fullName = 'Samir Rahane',
+    this.fullName = 'Farmer',
     this.size = 88,
     this.showCameraBadge = false,
     this.showEditBadge = false,
@@ -115,9 +116,7 @@ class FarmerAvatarWidget extends StatelessWidget {
         .join();
 
     final preset = findPreset(avatarPath);
-    final isCustomFile = avatarPath != null &&
-        !avatarPath!.startsWith('avatar_') &&
-        File(avatarPath!).existsSync();
+    final isCustomFile = !kIsWeb && avatarPath != null && !avatarPath!.startsWith('avatar_') && File(avatarPath!).existsSync();
 
     Widget avatarContent;
 
@@ -231,7 +230,7 @@ class FarmerAvatarWidget extends StatelessWidget {
       ),
       child: Center(
         child: Text(
-          initials.isNotEmpty ? initials : 'SR',
+          initials.isNotEmpty ? initials : 'F',
           style: TextStyle(
             fontSize: size * 0.36,
             fontWeight: FontWeight.w800,

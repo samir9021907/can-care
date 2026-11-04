@@ -25,7 +25,7 @@ import '../screens/farmer_community_screen.dart';
 class AppRoutes {
   AppRoutes._();
 
-  static const String splash = '/';
+  static const String splash = '/splash';
   static const String language = '/language';
   static const String createAccount = '/create-account';
   static const String signIn = '/sign-in';
@@ -70,4 +70,17 @@ class AppRoutes {
         careGuide: (_) => const SugarcaneCareGuideScreen(),
         community: (_) => const FarmerCommunityScreen(),
       };
+
+
+  static Route<dynamic>? generateRoute(RouteSettings settings) {
+    final builder = routes[settings.name];
+    if (builder != null) {
+      return MaterialPageRoute(builder: builder, settings: settings);
+    }
+    return MaterialPageRoute(
+      builder: (_) => const MainNavigationShell(),
+      settings: settings,
+    );
+  }
+
 }

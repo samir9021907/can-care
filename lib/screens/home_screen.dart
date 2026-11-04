@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 import '../localization/app_localizations.dart';
 import '../providers/auth_provider.dart';
@@ -524,7 +525,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   auth = null;
                 }
                 final user = auth?.currentUser;
-                final fullName = (user != null && user.fullName.isNotEmpty) ? user.fullName : 'Samir Rahane';
+                final fullName = (user != null && user.fullName.isNotEmpty)
+                    ? user.fullName
+                    : (user?.email.isNotEmpty == true ? user!.email.split('@').first : 'Farmer');
                 return FarmerAvatarWidget(
                   avatarPath: user?.avatarPath,
                   fullName: fullName,

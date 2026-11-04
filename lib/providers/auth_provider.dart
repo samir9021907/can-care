@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_profile.dart';
@@ -16,7 +15,7 @@ class AuthProvider extends ChangeNotifier {
   final AuthService _authService;
 
   UserProfile? _currentUser;
-  bool _isAuthenticated = true; // Set to true by default for easy demo navigation
+  bool _isAuthenticated = false;
   AuthLoadingType _loadingType = AuthLoadingType.none;
   String? _errorMessage;
   String? _successMessage;
@@ -27,8 +26,8 @@ class AuthProvider extends ChangeNotifier {
 
   AuthProvider({AuthService? authService})
       : _authService = authService ?? DemoAuthService() {
-    _currentUser = UserProfile.defaultDemo();
-    _loadProfileFromPrefs();
+    _currentUser = null;
+    loadAuthFromStorage();
   }
 
   UserProfile? get currentUser => _currentUser;
@@ -59,6 +58,10 @@ class AuthProvider extends ChangeNotifier {
       _currentUser = user;
       _isAuthenticated = true;
       _successMessage = 'Welcome back, ${user.fullName}!';
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('canecare_is_logged_in', true);
+      await prefs.setString('canecare_user_name', user.fullName);
+      await prefs.setString('canecare_user_email', user.email);
       _loadingType = AuthLoadingType.none;
       notifyListeners();
       return true;
@@ -83,6 +86,12 @@ class AuthProvider extends ChangeNotifier {
       _currentUser = user;
       _isAuthenticated = true;
       _successMessage = 'Account created successfully! Welcome to CaneCare AI.';
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('canecare_is_logged_in', true);
+      await prefs.setString('canecare_user_name', user.fullName);
+      await prefs.setString('canecare_user_email', user.email);
+      await prefs.setString('canecare_user_name', user.fullName);
+      await prefs.setString('canecare_user_email', user.email);
       _loadingType = AuthLoadingType.none;
       notifyListeners();
       return true;
@@ -94,7 +103,11 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> signInWithGoogle({String demoOutcome = 'success'}) async {
+  Future<void> signInWithGoogle({
+    String demoOutcome = 'success',
+    String? customEmail,
+    String? customName,
+  }) async {
     _loadingType = AuthLoadingType.googleAuth;
     _googleDemoStatus = 'loading';
     _errorMessage = null;
@@ -121,8 +134,10 @@ class AuthProvider extends ChangeNotifier {
     // Success demo
     _currentUser = UserProfile(
       id: 'usr_g_${DateTime.now().millisecondsSinceEpoch}',
-      fullName: 'Samir Rahane',
-      email: 'samir.farmer@gmail.com',
+      fullName: (customName != null && customName.trim().isNotEmpty)
+          ? customName.trim()
+          : (customEmail != null ? customEmail.split('@').first : 'Google Farmer'),
+      email: (customEmail != null && customEmail.trim().isNotEmpty) ? customEmail.trim() : 'farmer.google@gmail.com',
       phone: '+91 9021590368',
       region: 'Kolhapur, Maharashtra',
       isDemoUser: true,
@@ -131,10 +146,18 @@ class AuthProvider extends ChangeNotifier {
     _googleDemoStatus = 'success';
     _loadingType = AuthLoadingType.none;
     _successMessage = 'Connected via Google demo account!';
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('canecare_is_logged_in', true);
+    await prefs.setString('canecare_user_name', _currentUser!.fullName);
+    await prefs.setString('canecare_user_email', _currentUser!.email);
     notifyListeners();
   }
 
-  Future<void> signInWithApple({String demoOutcome = 'success'}) async {
+  Future<void> signInWithApple({
+    String demoOutcome = 'success',
+    String? customEmail,
+    String? customName,
+  }) async {
     _loadingType = AuthLoadingType.appleAuth;
     _appleDemoStatus = 'loading';
     notifyListeners();
@@ -151,8 +174,10 @@ class AuthProvider extends ChangeNotifier {
 
     _currentUser = UserProfile(
       id: 'usr_apple_${DateTime.now().millisecondsSinceEpoch}',
-      fullName: 'Samir Rahane',
-      email: 'samir.rahane@privaterelay.appleid.com',
+      fullName: (customName != null && customName.trim().isNotEmpty)
+          ? customName.trim()
+          : (customEmail != null ? customEmail.split('@').first : 'Google Farmer'),
+      email: (customEmail != null && customEmail.trim().isNotEmpty) ? customEmail.trim() : 'farmer.apple@icloud.com',
       phone: '+91 9021590368',
       region: 'Satara, Maharashtra',
       isDemoUser: true,
@@ -161,6 +186,10 @@ class AuthProvider extends ChangeNotifier {
     _appleDemoStatus = 'success';
     _loadingType = AuthLoadingType.none;
     _successMessage = 'Connected via Apple demo account!';
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('canecare_is_logged_in', true);
+    await prefs.setString('canecare_user_name', _currentUser!.fullName);
+    await prefs.setString('canecare_user_email', _currentUser!.email);
     notifyListeners();
   }
 
@@ -184,17 +213,29 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> signOut() async {
-    await _authService.signOut();
-    _currentUser = null;
-    _isAuthenticated = false;
-    _errorMessage = null;
-    _successMessage = null;
+  Future<void> loadAuthFromStorage() async {
+    final prefs = await SharedPreferences.getInstance();
+    final loggedIn = prefs.getBool('canecare_is_logged_in') ?? false;
+    if (loggedIn) {
+      _isAuthenticated = true;
+      final savedName = prefs.getString('canecare_user_name');
+      final savedEmail = prefs.getString('canecare_user_email');
+      _currentUser = UserProfile(
+        id: 'saved_user',
+        fullName: (savedName != null && savedName.isNotEmpty) ? savedName : 'Farmer',
+        email: (savedEmail != null && savedEmail.isNotEmpty) ? savedEmail : 'farmer@canecare.ai',
+        region: 'Maharashtra, India',
+        isDemoUser: false,
+      );
+      await _loadProfileFromPrefs();
+    } else {
+      _isAuthenticated = false;
+      _currentUser = null;
+    }
     notifyListeners();
   }
 
   Future<void> _loadProfileFromPrefs() async {
-    if (Platform.environment.containsKey('FLUTTER_TEST')) return;
     try {
       final prefs = await SharedPreferences.getInstance();
       final name = prefs.getString('user_full_name');
@@ -217,11 +258,12 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> _persistProfileToPrefs(UserProfile user) async {
-    if (Platform.environment.containsKey('FLUTTER_TEST')) return;
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('user_full_name', user.fullName);
+      await prefs.setString('canecare_user_name', user.fullName);
       await prefs.setString('user_email', user.email);
+      await prefs.setString('canecare_user_email', user.email);
       if (user.phone != null) await prefs.setString('user_phone', user.phone!);
       await prefs.setString('user_region', user.region);
       if (user.village != null) await prefs.setString('user_village', user.village!);
@@ -231,6 +273,37 @@ class AuthProvider extends ChangeNotifier {
       if (user.irrigationType != null) await prefs.setString('user_irrigation_type', user.irrigationType!);
       if (user.plantingSeason != null) await prefs.setString('user_planting_season', user.plantingSeason!);
     } catch (_) {}
+  }
+
+  Future<void> signOut() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('canecare_is_logged_in', false);
+      await prefs.remove('canecare_is_logged_in');
+      await prefs.remove('canecare_user_name');
+      await prefs.remove('canecare_user_email');
+      await _authService.signOut();
+    } catch (e) {
+      debugPrint('[AuthProvider] signOut: ');
+    } finally {
+      _currentUser = null;
+      _isAuthenticated = false;
+      _errorMessage = null;
+      _successMessage = null;
+      notifyListeners();
+    }
+  }
+
+  void updateProfileName(String newName, String newEmail, String region) {
+    if (_currentUser != null) {
+      _currentUser = _currentUser!.copyWith(
+        fullName: newName,
+        email: newEmail,
+        region: region,
+      );
+      _persistProfileToPrefs(_currentUser!);
+      notifyListeners();
+    }
   }
 
   void updateFarmerProfile({
@@ -263,11 +336,5 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  void updateProfileName(String newName, String newEmail, String region) {
-    updateFarmerProfile(
-      fullName: newName,
-      email: newEmail,
-      region: region,
-    );
-  }
+
 }

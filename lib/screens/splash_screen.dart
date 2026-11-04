@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../widgets/cane_logo.dart';
+
 import 'language_selection_screen.dart';
+
 
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});

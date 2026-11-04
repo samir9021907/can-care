@@ -36,9 +36,9 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
     super.initState();
     final user = context.read<AuthProvider>().currentUser;
     _nameController =
-        TextEditingController(text: user?.fullName ?? 'Samir Rahane');
+        TextEditingController(text: user?.fullName ?? '');
     _emailController =
-        TextEditingController(text: user?.email ?? 'samir.farmer@gmail.com');
+        TextEditingController(text: user?.email ?? '');
   }
 
   @override

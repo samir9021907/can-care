@@ -82,12 +82,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void initState() {
     super.initState();
     final user = context.read<AuthProvider>().currentUser;
-
-    _nameController = TextEditingController(text: user?.fullName ?? 'Samir Rahane');
+    _nameController = TextEditingController(text: user?.fullName ?? '');
     _phoneController = TextEditingController(
-      text: (user?.phone ?? '9021590368').replaceAll('+91', '').trim(),
+      text: (user?.phone ?? '').replaceAll('+91', '').trim(),
     );
-    _emailController = TextEditingController(text: user?.email ?? 'samir.farmer@gmail.com');
+    _emailController = TextEditingController(text: user?.email ?? '');
     _villageController = TextEditingController(text: user?.village ?? 'कोपरगाव');
     _farmSizeController = TextEditingController(text: user?.farmSize ?? '३.५ एकर');
 
