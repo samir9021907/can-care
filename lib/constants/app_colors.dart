@@ -30,6 +30,7 @@ class AppColors {
 
   // Text Colors
   static const Color textMain = Color(0xFF153B28); // Main text
+  static const Color textPrimary = Color(0xFF153B28); // Primary text alias
   static const Color textSecondary = Color(0xFF607568); // Secondary text
   static const Color textMuted = Color(0xFF8FA395);
   static const Color textLight = Colors.white;

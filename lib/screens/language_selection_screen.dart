@@ -5,7 +5,7 @@ import '../localization/app_localizations.dart';
 import '../providers/locale_provider.dart';
 import '../widgets/language_card.dart';
 import '../widgets/leaf_decoration.dart';
-import 'create_account_screen.dart';
+import 'sign_in_screen.dart';
 
 class LanguageSelectionScreen extends StatefulWidget {
   final bool isFromSettings;
@@ -39,7 +39,7 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
       } else {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const CreateAccountScreen()),
+          MaterialPageRoute(builder: (_) => const SignInScreen()),
         );
       }
     }

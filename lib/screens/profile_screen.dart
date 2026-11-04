@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../localization/app_localizations.dart';
 import '../providers/auth_provider.dart';
 import '../providers/locale_provider.dart';
@@ -32,6 +33,10 @@ class ProfileScreen extends StatelessWidget {
 
     if (confirmed == true && context.mounted) {
       await context.read<AuthProvider>().signOut();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('canecare_is_logged_in', false);
+      await prefs.remove('canecare_is_logged_in');
+
       if (context.mounted) {
         Navigator.pushAndRemoveUntil(
           context,
@@ -50,7 +55,7 @@ class ProfileScreen extends StatelessWidget {
     final user = auth.currentUser;
 
     // Default to Samir Rahane / Farmer if user is null or demo
-    final fullName = (user != null && user.fullName.isNotEmpty) ? user.fullName : 'Samir Rahane';
+    final fullName = (user != null && user.fullName.isNotEmpty) ? user.fullName : 'Farmer';
     final userRole = loc.translate('profile_farmer');
     final initials = fullName.split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join();
 
@@ -103,7 +108,7 @@ class ProfileScreen extends StatelessWidget {
                     ),
                     alignment: Alignment.center,
                     child: Text(
-                      initials.isNotEmpty ? initials : 'SR',
+                      initials.isNotEmpty ? initials : 'F',
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,

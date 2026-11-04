@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 import '../localization/app_localizations.dart';
 import '../models/disease_info.dart';
@@ -397,6 +400,18 @@ class _HomeScreenState extends State<HomeScreen> {
   // -------------------------------------------------------------
 
   Widget _buildTopBar() {
+    final auth = context.watch<AuthProvider>();
+    final user = auth.currentUser;
+    String initials = 'U';
+    if (user != null && user.fullName.trim().isNotEmpty) {
+      final parts = user.fullName.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+      if (parts.length >= 2) {
+        initials = (parts[0][0] + parts[1][0]).toUpperCase();
+      } else if (parts.isNotEmpty) {
+        final name = parts[0];
+        initials = (name.length >= 2 ? name.substring(0, 2) : name).toUpperCase();
+      }
+    }
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -522,9 +537,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   shape: BoxShape.circle,
                 ),
                 alignment: Alignment.center,
-                child: const Text(
-                  'SR',
-                  style: TextStyle(
+                child: Text(
+                  initials,
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
                     color: Color(0xFF14451D),

@@ -20,6 +20,7 @@ class AppDimensions {
   static const double radiusButton = 12.0; // ~12px rounded buttons
   static const double radiusCard = 16.0; // ~16px rounded cards
   static const double radiusLarge = 24.0;
+  static const double radiusL = 24.0; // Alias for radiusLarge
   static const double radiusPill = 999.0;
 
   // Touch Target

@@ -25,9 +25,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void initState() {
     super.initState();
     final user = context.read<AuthProvider>().currentUser;
-    _nameController = TextEditingController(text: user?.fullName ?? 'Samir Rahane');
+    _nameController = TextEditingController(text: user?.fullName ?? '');
     _emailController =
-        TextEditingController(text: user?.email ?? 'samir.farmer@gmail.com');
+        TextEditingController(text: user?.email ?? '');
     _regionController =
         TextEditingController(text: user?.region ?? 'Kolhapur, Maharashtra');
   }
