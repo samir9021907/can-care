@@ -2,11 +2,49 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../localization/app_localizations.dart';
 import '../providers/history_provider.dart';
+import '../models/disease_info.dart';
 import '../models/scan_report.dart';
 import '../widgets/history_card.dart';
 import '../widgets/empty_state_view.dart';
 import '../widgets/error_state_view.dart';
+import '../widgets/top_notification.dart';
 import 'saved_report_detail_screen.dart';
+import 'disease_detail_screen.dart';
+
+class _WeeklyHealthBucket {
+  final int weekNumber; // 1, 2, 3, 4
+  final DateTime startDate;
+  final DateTime endDate;
+  final String weekLabel;
+  final List<ScanReport> reports;
+
+  _WeeklyHealthBucket({
+    required this.weekNumber,
+    required this.startDate,
+    required this.endDate,
+    required this.weekLabel,
+    required this.reports,
+  });
+
+  int get totalCount => reports.length;
+  int get healthyCount => reports.where((r) => r.isHealthy).length;
+  int get moderateCount => reports
+      .where((r) =>
+          !r.isHealthy &&
+          (r.severity == DiseaseSeverity.low ||
+              r.severity == DiseaseSeverity.moderate))
+      .length;
+  int get criticalCount => reports
+      .where((r) =>
+          !r.isHealthy &&
+          (r.severity == DiseaseSeverity.high ||
+              r.severity == DiseaseSeverity.critical))
+      .length;
+
+  double get greenRatio => totalCount == 0 ? 0.0 : healthyCount / totalCount;
+  double get amberRatio => totalCount == 0 ? 0.0 : moderateCount / totalCount;
+  double get redRatio => totalCount == 0 ? 0.0 : criticalCount / totalCount;
+}
 
 class HistoryScreen extends StatefulWidget {
   final VoidCallback onNavigateToScan;
@@ -70,142 +108,458 @@ class _HistoryScreenState extends State<HistoryScreen> {
       setState(() {
         _selectedDateRange = picked;
       });
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            'Filtered scans from ${picked.start.day}/${picked.start.month} to ${picked.end.day}/${picked.end.month}',
-          ),
-          duration: const Duration(seconds: 2),
-          backgroundColor: const Color(0xFF165228),
-        ),
+      TopNotification.show(
+        context,
+        title: 'तारीख फिल्टर लागू केला',
+        subtitle:
+            '${picked.start.day}/${picked.start.month} ते ${picked.end.day}/${picked.end.month} पर्यंतचे स्कॅन दाखवत आहोत',
+        icon: Icons.calendar_today_rounded,
       );
     }
+  }
+
+  DiseaseInfo _findDiseaseForReport(ScanReport report) {
+    final diseases = DiseaseInfo.getSugarcaneDiseases();
+    final resName = report.diseaseName.toLowerCase();
+    if (report.isHealthy || resName.contains('healthy') || resName.contains('निरोगी')) {
+      return diseases.firstWhere((d) => d.isHealthy, orElse: () => diseases.first);
+    }
+    for (final d in diseases) {
+      if (!d.isHealthy &&
+          (resName.contains(d.id.toLowerCase()) ||
+              resName.contains(d.name.toLowerCase()) ||
+              d.name.toLowerCase().contains(resName) ||
+              (report.marathiName.isNotEmpty &&
+                  d.marathiName.toLowerCase().contains(report.marathiName.toLowerCase())))) {
+        return d;
+      }
+    }
+    return diseases.firstWhere((d) => !d.isHealthy, orElse: () => diseases.first);
   }
 
   void _showReportsSummaryModal(BuildContext context) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(22),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFE8F8EE),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.assessment_outlined,
-                    color: Color(0xFF165228),
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                const Text(
-                  'Monthly Scans Summary',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF14451D),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              '• Total Scans Conducted: 12\n'
-              '• Healthy Crop Rate: 75% (9 plots safe)\n'
-              '• Detected Concerns: Red Rot (1 plot), Rust (1 plot), Yellow Leaf (1 plot)\n'
-              '• Trend: Treatment in Plot #2 showing improvement.',
-              style: TextStyle(
-                fontSize: 13.5,
-                height: 1.5,
-                color: Color(0xFF334155),
-              ),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              height: 46,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(ctx),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF165228),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-                child: const Text(
-                  'Close',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Pull bar
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE2E8F0),
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+
+              // Title Row
+              Row(
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFE8F8EE),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.assessment_outlined,
+                      color: Color(0xFF165228),
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text(
+                          'Monthly Scans Summary',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF14451D),
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                        Text(
+                          'मासिक पीक आरोग्य सारांश • एप्रिल २०२५',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF6B8074),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    icon: const Icon(Icons.close_rounded,
+                        color: Color(0xFF64748B), size: 20),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+
+              // 4 Stat Metric Pills Grid
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 10, horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF7FAF7),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFE2EBE2)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text('12 Scans',
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF14451D))),
+                          Text('एकूण स्कॅन',
+                              style: TextStyle(
+                                  fontSize: 10.5,
+                                  color: Color(0xFF6B8074),
+                                  fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 10, horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE8F8EE),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFC7EED4)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text('75% Safe',
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF15803D))),
+                          Text('९ निरोगी प्लॉट्स',
+                              style: TextStyle(
+                                  fontSize: 10.5,
+                                  color: Color(0xFF15803D),
+                                  fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 10, horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFFBEB),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFFDE68A)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text('3 Concerns',
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFFD97706))),
+                          Text('तांबेरा, लाल कुज, YLD',
+                              style: TextStyle(
+                                  fontSize: 10.5,
+                                  color: Color(0xFFB45309),
+                                  fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 10, horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF6FF),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFBFDBFE)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text('Plot #2',
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF1D4ED8))),
+                          Text('उपचार सुधारणा सुरू',
+                              style: TextStyle(
+                                  fontSize: 10.5,
+                                  color: Color(0xFF1E40AF),
+                                  fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Agronomist Advice Box
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Icon(Icons.lightbulb_outline_rounded,
+                        color: Color(0xFF0F766E), size: 18),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'कृषी सल्लागार निरीक्षण: वावर क्र. २ मधील पिवळा पानाचा प्रादुर्भाव नियंत्रणात येत आहे. पुढील आठवड्यात जैविक बुरशीनाशकाची दुसरी फेरी पूर्ण करा.',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          height: 1.4,
+                          color: Color(0xFF334155),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+
+              // Action Buttons Row: Download PDF & Share Expert
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _shareWithExpert(context);
+                      },
+                      icon: const Icon(Icons.share_outlined, size: 16),
+                      label: const Text('Share Expert'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF165228),
+                        side: const BorderSide(color: Color(0xFF86EFAC)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _downloadPdfReport(context);
+                      },
+                      icon: const Icon(Icons.file_download_outlined,
+                          size: 16, color: Colors.white),
+                      label: const Text('Download PDF'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF165228),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   void _downloadPdfReport(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
-            SizedBox(width: 10),
-            Text('Sugarcane_Health_Report_April.pdf downloaded!'),
-          ],
-        ),
-        backgroundColor: Color(0xFF165228),
-        duration: Duration(seconds: 3),
-      ),
+    TopNotification.showDownload(
+      context,
+      fileName: 'Sugarcane_Health_Report_April.pdf',
+      fileSize: '2.4 MB',
+      onOpen: () => _showReportsSummaryModal(context),
     );
   }
 
   void _shareWithExpert(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.share_rounded, color: Colors.white, size: 20),
-            SizedBox(width: 10),
-            Text('Share link generated for CaneCare Agronomist!'),
-          ],
+    TopNotification.showShare(
+      context,
+      title: 'कृषी तज्ज्ञांसाठी अहवाल तयार!',
+      subtitle: 'शेअर लिंक क्लिपबोर्डवर कॉपी झाली',
+      onTap: () => _showShareOptionsSheet(context),
+    );
+    _showShareOptionsSheet(context);
+  }
+
+  void _showShareOptionsSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE2E8F0),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: const [
+                  Icon(Icons.share_rounded, color: Color(0xFF165228), size: 22),
+                  SizedBox(width: 10),
+                  Text(
+                    'अहवाल शेअर करा (Share Report)',
+                    style: TextStyle(
+                      fontSize: 16.5,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF14451D),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFE8F8EE),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.chat_bubble_outline_rounded,
+                      color: Color(0xFF15803D), size: 20),
+                ),
+                title: const Text('WhatsApp द्वारे कृषी तज्ज्ञांना पाठवा',
+                    style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700)),
+                subtitle: const Text('पीडीएफ अहवाल आणि प्लॉट इतिहास थेट पाठवा',
+                    style: TextStyle(fontSize: 11)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  TopNotification.show(
+                    context,
+                    title: 'WhatsApp वर शेअर केले',
+                    subtitle: 'अहवाल कृषी अधिकाऱ्यांच्या चॅटवर पाठवला गेला आहे.',
+                    icon: Icons.check_circle_rounded,
+                  );
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFE0F2FE),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.support_agent_rounded,
+                      color: Color(0xFF0284C7), size: 20),
+                ),
+                title: const Text('KVK कृषी विज्ञान केंद्र तज्ज्ञ',
+                    style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700)),
+                subtitle: const Text('स्थानिक शास्त्रज्ञांचे मोफत मार्गदर्शन मिळवा',
+                    style: TextStyle(fontSize: 11)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  TopNotification.show(
+                    context,
+                    title: 'KVK तज्ज्ञांना सादर केले',
+                    subtitle: 'नजीकच्या KVK अधिकाऱ्यांशी संपर्क जोडला गेला.',
+                    icon: Icons.check_circle_rounded,
+                  );
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFF1F5F9),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.copy_rounded,
+                      color: Color(0xFF475569), size: 20),
+                ),
+                title: const Text('शेअर लिंक कॉपी करा (Copy Link)',
+                    style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700)),
+                subtitle: const Text('कॅनकेअर डिजिटल अहवाल लिंक',
+                    style: TextStyle(fontSize: 11)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  TopNotification.show(
+                    context,
+                    title: 'लिंक कॉपी झाली!',
+                    subtitle: 'https://canecare.ai/report/apr2025/rep_001',
+                    icon: Icons.link_rounded,
+                  );
+                },
+              ),
+            ],
+          ),
         ),
-        backgroundColor: Color(0xFF165228),
-        duration: Duration(seconds: 3),
       ),
     );
   }
 
   void _setFollowUpReminder(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.alarm_on_rounded, color: Colors.white, size: 20),
-            SizedBox(width: 10),
-            Text('Reminder set: Recheck Yellow Leaf Plot #2 in 3 days!'),
-          ],
-        ),
-        backgroundColor: Color(0xFF165228),
-        duration: Duration(seconds: 3),
-      ),
+    TopNotification.showReminder(
+      context,
+      title: 'फॉलो-अप रिमाइंडर सेट केला!',
+      subtitle: '३ दिवसांत पिवळे पान वावर क्र. २ तपासा (Plot #2)',
+      onTap: () => _showReportsSummaryModal(context),
     );
   }
 
@@ -218,6 +572,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final totalCount = history.reports.length;
     final healthyCount = history.reports.where((r) => r.isHealthy).length;
     final diseasedCount = history.reports.where((r) => !r.isHealthy).length;
+
+    final buckets = _computeWeeklyBuckets(history.reports);
 
     // Filter reports according to selected date range if any
     List<ScanReport> displayedReports = history.filteredReports;
@@ -264,8 +620,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
             onSelected: (val) {
               if (val == 'clear') {
                 history.clearReports();
+                TopNotification.show(
+                  context,
+                  title: 'इतिहास साफ केला',
+                  subtitle: 'सर्व स्कॅन अहवाल हटवले गेले आहेत.',
+                  icon: Icons.delete_sweep_rounded,
+                  iconBg: const Color(0xFFFFEBEE),
+                  iconColor: const Color(0xFFDC2626),
+                );
               } else if (val == 'restore') {
                 history.restoreDemoReports();
+                TopNotification.show(
+                  context,
+                  title: 'सर्व १२ स्कॅन रिस्टोअर केले',
+                  subtitle: 'डेमो अहवाल यशस्वीरित्या लोड झाले.',
+                  icon: Icons.restore_rounded,
+                );
               } else if (val == 'download') {
                 _downloadPdfReport(context);
               }
@@ -548,11 +918,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   (report) => HistoryCard(
                     report: report,
                     onTap: () {
+                      final disease = _findDiseaseForReport(report);
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) =>
-                              SavedReportDetailScreen(report: report),
+                          builder: (_) => DiseaseDetailScreen(disease: disease),
                         ),
                       );
                     },
@@ -565,7 +935,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               // ==========================================
               // 6. CROP HEALTH TREND (साप्ताहिक कल) CARD
               // ==========================================
-              _buildCropHealthTrendCard(),
+              _buildCropHealthTrendCard(history, buckets),
               const SizedBox(height: 16),
 
               // ==========================================
@@ -722,7 +1092,104 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Widget _buildCropHealthTrendCard() {
+  List<_WeeklyHealthBucket> _computeWeeklyBuckets(List<ScanReport> allReports) {
+    if (allReports.isEmpty) {
+      final now = DateTime.now();
+      return List.generate(4, (i) {
+        final wNum = i + 1;
+        return _WeeklyHealthBucket(
+          weekNumber: wNum,
+          startDate: now.subtract(Duration(days: (4 - i) * 7)),
+          endDate: now.subtract(Duration(days: (4 - i - 1) * 7)),
+          weekLabel: 'Week $wNum',
+          reports: const [],
+        );
+      });
+    }
+
+    // Determine the anchor Sunday from the latest scan date
+    DateTime latestScanDate = allReports
+        .map((r) => r.scanDate)
+        .reduce((a, b) => a.isAfter(b) ? a : b);
+
+    final int daysUntilSunday =
+        latestScanDate.weekday == 7 ? 0 : (7 - latestScanDate.weekday);
+    final DateTime endOfLatestWeek = DateTime(
+      latestScanDate.year,
+      latestScanDate.month,
+      latestScanDate.day + daysUntilSunday,
+      23,
+      59,
+      59,
+      999,
+    );
+
+    const monthNames = [
+      '',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
+
+    final List<_WeeklyHealthBucket> buckets = [];
+
+    for (int w = 1; w <= 4; w++) {
+      final int weeksFromEnd = 4 - w;
+      final int daysFromEndToSunday = weeksFromEnd * 7;
+      final int daysFromEndToMonday = daysFromEndToSunday + 6;
+
+      final DateTime wStart = DateTime(
+        endOfLatestWeek.year,
+        endOfLatestWeek.month,
+        endOfLatestWeek.day - daysFromEndToMonday,
+        0,
+        0,
+        0,
+        0,
+      );
+      final DateTime wEnd = DateTime(
+        endOfLatestWeek.year,
+        endOfLatestWeek.month,
+        endOfLatestWeek.day - daysFromEndToSunday,
+        23,
+        59,
+        59,
+        999,
+      );
+
+      final weekReports = allReports.where((r) {
+        return !r.scanDate.isBefore(wStart) && !r.scanDate.isAfter(wEnd);
+      }).toList();
+
+      final startStr =
+          '${wStart.day.toString().padLeft(2, '0')} ${monthNames[wStart.month]}';
+      final endStr =
+          '${wEnd.day.toString().padLeft(2, '0')} ${monthNames[wEnd.month]}';
+      final label = 'Week $w ($startStr \u2013 $endStr)';
+
+      buckets.add(_WeeklyHealthBucket(
+        weekNumber: w,
+        startDate: wStart,
+        endDate: wEnd,
+        weekLabel: label,
+        reports: weekReports,
+      ));
+    }
+
+    return buckets;
+  }
+
+  Widget _buildCropHealthTrendCard(
+      HistoryProvider history, List<_WeeklyHealthBucket> buckets) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -791,80 +1258,100 @@ class _HistoryScreenState extends State<HistoryScreen> {
           ),
           const SizedBox(height: 14),
 
-          // 4 Weekly Segmented Progress Bars matching Image 3
-          _buildWeeklyBar(
-            weekLabel: 'Week 1 (24 Mar – 30 Mar)',
-            scanCount: '4 scans',
-            greenRatio: 1.0,
-            amberRatio: 0.0,
-            redRatio: 0.0,
-          ),
-          const SizedBox(height: 12),
-          _buildWeeklyBar(
-            weekLabel: 'Week 2 (31 Mar – 06 Apr)',
-            scanCount: '3 scans',
-            greenRatio: 0.65,
-            amberRatio: 0.35,
-            redRatio: 0.0,
-          ),
-          const SizedBox(height: 12),
-          _buildWeeklyBar(
-            weekLabel: 'Week 3 (07 Apr – 13 Apr)',
-            scanCount: '2 scans',
-            greenRatio: 0.50,
-            amberRatio: 0.50,
-            redRatio: 0.0,
-          ),
-          const SizedBox(height: 12),
-          _buildWeeklyBar(
-            weekLabel: 'Week 4 (14 Apr – 20 Apr)',
-            scanCount: '3 scans',
-            greenRatio: 0.35,
-            amberRatio: 0.0,
-            redRatio: 0.65,
-          ),
-          const SizedBox(height: 16),
+          // 4 Weekly Segmented Progress Bars dynamically computed
+          ...buckets.map((bucket) {
+            final String scanCountText;
+            final double gRatio;
+            final double aRatio;
+            final double rRatio;
 
-          // Legend
+            if (history.currentFilter == HistoryFilter.healthy) {
+              final cnt = bucket.healthyCount;
+              scanCountText = '$cnt ${cnt == 1 ? 'scan' : 'scans'}';
+              gRatio = cnt > 0 ? 1.0 : 0.0;
+              aRatio = 0.0;
+              rRatio = 0.0;
+            } else if (history.currentFilter == HistoryFilter.diseased) {
+              final cnt = bucket.moderateCount + bucket.criticalCount;
+              scanCountText = '$cnt ${cnt == 1 ? 'scan' : 'scans'}';
+              gRatio = 0.0;
+              if (cnt == 0) {
+                aRatio = 0.0;
+                rRatio = 0.0;
+              } else {
+                aRatio = bucket.moderateCount / cnt;
+                rRatio = bucket.criticalCount / cnt;
+              }
+            } else {
+              scanCountText =
+                  '${bucket.totalCount} ${bucket.totalCount == 1 ? 'scan' : 'scans'}';
+              gRatio = bucket.greenRatio;
+              aRatio = bucket.amberRatio;
+              rRatio = bucket.redRatio;
+            }
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildWeeklyBar(
+                weekLabel: bucket.weekLabel,
+                scanCount: scanCountText,
+                greenRatio: gRatio,
+                amberRatio: aRatio,
+                redRatio: rRatio,
+              ),
+            );
+          }),
+
+          const SizedBox(height: 4),
+
+          // Legend matching Image 1
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF15803D),
-                    borderRadius: BorderRadius.circular(2.5),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                const Text(
-                  'Healthy Crop',
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF475569),
-                  ),
+                Row(
+                  children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF15803D),
+                        borderRadius: BorderRadius.circular(2.5),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    const Text(
+                      'Healthy Crop',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF475569),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(width: 20),
-                Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFEF4444),
-                    borderRadius: BorderRadius.circular(2.5),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                const Text(
-                  'Needs Attention',
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF475569),
-                  ),
+                Row(
+                  children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEF4444),
+                        borderRadius: BorderRadius.circular(2.5),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    const Text(
+                      'Needs Attention',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF475569),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -923,17 +1410,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
               children: [
                 if (greenRatio > 0)
                   Expanded(
-                    flex: (greenRatio * 100).toInt(),
+                    flex: (greenRatio * 100).toInt().clamp(1, 100),
                     child: Container(color: const Color(0xFF15803D)),
                   ),
                 if (amberRatio > 0)
                   Expanded(
-                    flex: (amberRatio * 100).toInt(),
+                    flex: (amberRatio * 100).toInt().clamp(1, 100),
                     child: Container(color: const Color(0xFFF59E0B)),
                   ),
                 if (redRatio > 0)
                   Expanded(
-                    flex: (redRatio * 100).toInt(),
+                    flex: (redRatio * 100).toInt().clamp(1, 100),
                     child: Container(color: const Color(0xFFEF4444)),
                   ),
               ],
@@ -1162,12 +1649,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
             // Restore all scans and clear filter
             context.read<HistoryProvider>().setFilter(HistoryFilter.all);
             context.read<HistoryProvider>().setSearchQuery('');
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Displaying full field archive (12 scans total).'),
-                backgroundColor: Color(0xFF165228),
-                duration: Duration(seconds: 2),
-              ),
+            TopNotification.show(
+              context,
+              title: 'फील्ड अर्काइव्ह (Field Archive)',
+              subtitle: 'सर्व १२ स्कॅन अहवाल प्रदर्शित केले आहेत.',
+              icon: Icons.inventory_2_outlined,
             );
           },
           child: const Text.rich(

@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -141,9 +140,7 @@ class HistoryCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE8EFE5), width: 1.0),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.025),
@@ -153,11 +150,16 @@ class HistoryCard extends StatelessWidget {
         ],
       ),
       child: Material(
-        color: Colors.transparent,
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(18),
-          child: Padding(
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: const Color(0xFFE8EFE5), width: 1.0),
+            ),
             padding: const EdgeInsets.all(12),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -259,24 +261,11 @@ class HistoryCard extends StatelessWidget {
         errorBuilder: (ctx, err, stack) => _buildFallbackIcon(),
       );
     }
-    if (kIsWeb) {
-      return Image.network(
-        path,
-        fit: BoxFit.cover,
-        errorBuilder: (ctx, err, stack) => _buildFallbackIcon(),
-      );
-    }
-    try {
-      final file = File(path);
-      if (file.existsSync()) {
-        return Image.file(
-          file,
-          fit: BoxFit.cover,
-          errorBuilder: (ctx, err, stack) => _buildFallbackIcon(),
-        );
-      }
-    } catch (_) {}
-    return _buildFallbackIcon();
+    return Image.network(
+      path,
+      fit: BoxFit.cover,
+      errorBuilder: (ctx, err, stack) => _buildFallbackIcon(),
+    );
   }
 
   Widget _buildFallbackIcon() {

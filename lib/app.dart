@@ -91,7 +91,7 @@ class CaneCareApp extends StatelessWidget {
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                   elevation: 0,
-                  minimumSize: const Size(double.infinity, AppDimensions.buttonHeight),
+                  minimumSize: const Size(64, AppDimensions.buttonHeight),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppDimensions.radiusButton),
                   ),
@@ -106,7 +106,7 @@ class CaneCareApp extends StatelessWidget {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.primary,
                   side: const BorderSide(color: AppColors.primary, width: 1.5),
-                  minimumSize: const Size(double.infinity, AppDimensions.buttonHeight),
+                  minimumSize: const Size(64, AppDimensions.buttonHeight),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(AppDimensions.radiusButton),
                   ),

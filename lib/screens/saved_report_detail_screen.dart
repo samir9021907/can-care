@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -12,6 +11,7 @@ import '../services/agri_product_service.dart';
 import '../widgets/severity_badge.dart';
 import '../widgets/confirm_dialog.dart';
 import '../widgets/app_snackbar.dart';
+import '../widgets/nearby_krishi_kendras_widget.dart';
 import 'ask_question_screen.dart';
 import 'disease_detail_screen.dart';
 import 'product_detail_screen.dart';
@@ -367,8 +367,8 @@ class _SavedReportDetailScreenState extends State<SavedReportDetailScreen> {
               _buildComparePrices(context, recommendedProducts),
               const SizedBox(height: 20),
 
-              // Find Near Me Section
-              _buildFindNearMe(context, nearbyKendras),
+              // Find Near Me Section (जवळची कृषी सेवा केंद्रे - थेट GPS)
+              const NearbyKrishiKendrasWidget(initialRadiusKm: 100.0),
               const SizedBox(height: 14),
 
               // Verified Dealers Registration Footer (Screenshot 6)
@@ -412,24 +412,11 @@ class _SavedReportDetailScreenState extends State<SavedReportDetailScreen> {
         errorBuilder: (ctx, err, stack) => _fallbackImage(),
       );
     }
-    if (kIsWeb) {
-      return Image.network(
-        path,
-        fit: BoxFit.cover,
-        errorBuilder: (ctx, err, stack) => _fallbackImage(),
-      );
-    }
-    try {
-      final file = File(path);
-      if (file.existsSync()) {
-        return Image.file(
-          file,
-          fit: BoxFit.cover,
-          errorBuilder: (ctx, err, stack) => _fallbackImage(),
-        );
-      }
-    } catch (_) {}
-    return _fallbackImage();
+    return Image.network(
+      path,
+      fit: BoxFit.cover,
+      errorBuilder: (ctx, err, stack) => _fallbackImage(),
+    );
   }
 
   Widget _fallbackImage() {
@@ -649,6 +636,7 @@ class _SavedReportDetailScreenState extends State<SavedReportDetailScreen> {
 
   Widget _buildComparePrices(
       BuildContext context, List<RecommendedProduct> products) {
+    final nearbyKendras = AgriProductService.getNearbyKendras();
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -738,12 +726,17 @@ class _SavedReportDetailScreenState extends State<SavedReportDetailScreen> {
           ),
           const SizedBox(height: 10),
           if (_isOnlinePriceTab) ...[
-            _priceItem('MahaAgri Direct', '₹175', 'In Stock'),
-            _priceItem('KisanSeva Mart', '₹185', 'In Stock'),
-            _priceItem('AgroStar Kolhapur', '₹190', 'Limited Stock'),
+            _priceItem('MahaAgri Direct', '₹175', 'In Stock (उपलब्ध)'),
+            _priceItem('KisanSeva Mart', '₹185', 'In Stock (उपलब्ध)'),
+            _priceItem('AgroStar Direct', '₹190', 'In Stock (उपलब्ध)'),
           ] else ...[
-            _priceItem('Shree Ganesh Krishi Seva', '₹185', 'Satara Market Yard'),
-            _priceItem('Kisan Vikas Agro Agency', '₹180', 'Kolhapur MIDC'),
+            ...nearbyKendras.take(3).map(
+                  (k) => _priceItem(
+                    k.marathiName.isNotEmpty ? k.marathiName : k.name,
+                    '₹180',
+                    '${k.distanceKm} km • उपलब्ध',
+                  ),
+                ),
           ],
         ],
       ),
@@ -823,14 +816,19 @@ class _SavedReportDetailScreenState extends State<SavedReportDetailScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        k.name,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF14451D),
+                      Expanded(
+                        child: Text(
+                          k.name,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF14451D),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 6, vertical: 2),
@@ -863,6 +861,7 @@ class _SavedReportDetailScreenState extends State<SavedReportDetailScreen> {
                           style: OutlinedButton.styleFrom(
                             foregroundColor: const Color(0xFF14451D),
                             side: const BorderSide(color: Color(0xFFC8E6C9)),
+                            minimumSize: const Size(0, 36),
                             padding: const EdgeInsets.symmetric(vertical: 6),
                           ),
                         ),
@@ -878,6 +877,7 @@ class _SavedReportDetailScreenState extends State<SavedReportDetailScreen> {
                             backgroundColor: const Color(0xFF165228),
                             foregroundColor: Colors.white,
                             elevation: 0,
+                            minimumSize: const Size(0, 36),
                             padding: const EdgeInsets.symmetric(vertical: 6),
                           ),
                         ),
@@ -964,6 +964,7 @@ class _SavedReportDetailScreenState extends State<SavedReportDetailScreen> {
               backgroundColor: const Color(0xFF165228),
               foregroundColor: Colors.white,
               elevation: 0,
+              minimumSize: const Size(0, 36),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               textStyle:
                   const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
@@ -998,26 +999,28 @@ class _SavedReportDetailScreenState extends State<SavedReportDetailScreen> {
                     color: Colors.white, size: 20),
               ),
               const SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text(
-                    'Not sure which product is right?',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF14451D),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text(
+                      'Not sure which product is right?',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF14451D),
+                      ),
                     ),
-                  ),
-                  Text(
-                    'कोणते औषध योग्य आहे?',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF2E7D32),
+                    Text(
+                      'कोणते औषध योग्य आहे?',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF2E7D32),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
@@ -1050,6 +1053,7 @@ class _SavedReportDetailScreenState extends State<SavedReportDetailScreen> {
                 backgroundColor: const Color(0xFF165228),
                 foregroundColor: Colors.white,
                 elevation: 0,
+                minimumSize: const Size(0, 42),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),

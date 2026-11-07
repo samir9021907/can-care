@@ -533,6 +533,7 @@ class ProductDetailScreen extends StatelessWidget {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFF165228),
                     side: const BorderSide(color: Color(0xFFC8E6C9)),
+                    minimumSize: const Size(0, 36),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10)),
                   ),
@@ -549,6 +550,7 @@ class ProductDetailScreen extends StatelessWidget {
                     backgroundColor: const Color(0xFF165228),
                     foregroundColor: Colors.white,
                     elevation: 0,
+                    minimumSize: const Size(0, 36),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10)),
                   ),

@@ -201,6 +201,48 @@ class KrishiKendra {
     }
     return inStockSummary;
   }
+
+  KrishiKendra copyWith({
+    String? id,
+    String? name,
+    String? marathiName,
+    bool? isLicensed,
+    String? licenseNumber,
+    String? address,
+    String? marathiAddress,
+    String? region,
+    double? distanceKm,
+    String? phoneNumber,
+    String? inStockSummary,
+    String? inStockSummaryMarathi,
+    double? latitude,
+    double? longitude,
+    double? rating,
+    String? operatingHours,
+    String? operatingHoursMarathi,
+  }) {
+    return KrishiKendra(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      marathiName: marathiName ?? this.marathiName,
+      isLicensed: isLicensed ?? this.isLicensed,
+      licenseNumber: licenseNumber ?? this.licenseNumber,
+      address: address ?? this.address,
+      marathiAddress: marathiAddress ?? this.marathiAddress,
+      region: region ?? this.region,
+      distanceKm: distanceKm ?? this.distanceKm,
+      phoneNumber: phoneNumber ?? this.phoneNumber,
+      inStockSummary: inStockSummary ?? this.inStockSummary,
+      inStockSummaryMarathi:
+          inStockSummaryMarathi ?? this.inStockSummaryMarathi,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      rating: rating ?? this.rating,
+      operatingHours: operatingHours ?? this.operatingHours,
+      operatingHoursMarathi:
+          operatingHoursMarathi ?? this.operatingHoursMarathi,
+    );
+  }
 }
 
 /// Action steps shown under "What should I do next?"

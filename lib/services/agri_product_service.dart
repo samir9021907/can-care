@@ -1,6 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/recommended_product.dart';
+
+/// User's geographic location information for finding nearest Krishi Kendras
+class UserLocationInfo {
+  final double latitude;
+  final double longitude;
+  final String locationName;
+  final String shortName;
+  final bool isLiveGps;
+
+  const UserLocationInfo({
+    required this.latitude,
+    required this.longitude,
+    required this.locationName,
+    required this.shortName,
+    required this.isLiveGps,
+  });
+}
 
 class AgriProductService {
   /// Available agricultural farming regions in Maharashtra cane belt
@@ -17,13 +35,61 @@ class AgriProductService {
   static List<RecommendedProduct> getProductsForDisease(String diseaseId) {
     final lower = diseaseId.toLowerCase();
 
+    if (lower.contains('healthy') || lower.contains('निरोगी')) {
+      return [
+        const RecommendedProduct(
+          id: 'prod_trichoderma_healthy',
+          diseaseId: 'healthy',
+          name: 'Trichoderma viride Bio-Fungicide',
+          marathiName: 'ट्रायकोडर्मा व्हिरीडे (Trichoderma)',
+          categoryTag: 'PREVENTIVE BIO-CONTROL',
+          marathiCategoryTag: 'प्रतिबंधात्मक जैविक बुरशीनाशक',
+          packSize: '1 kg Pack',
+          verifiedMrp: 185.0,
+          purpose:
+              'Soil drenching & root zone protection to keep crop vigorous and prevent future infections.',
+          purposeMarathi:
+              'मुळाजवळ जैविक बुरशीनाशकाची आळवणी करून निरोगी वाढ टिकवून ठेवणे.',
+          imageAsset: 'assets/images/product_trichoderma.jpg',
+          activeIngredient: 'Trichoderma viride 1.0% WP (Min. 2x10^6 CFU/g)',
+          cibrcRegistration: 'CIR-143,291/2021-Trichoderma(WP)-89',
+          dosageSugarcane:
+              '2.5 to 3.0 kg per acre mixed with 200 kg Farmyard Manure (FYM).',
+          dosageSugarcaneMarathi:
+              '२.५ ते ३ किलो प्रति एकर २०० किलो चांगल्या कुजलेल्या शेणखतात मिसळून द्यावे.',
+          applicationMethod:
+              'Root-zone soil application or irrigation drenching during vegetative stage.',
+          applicationMethodMarathi:
+              'बाळ बांधणीच्या वेळी मुळाजवळ आळवणी किंवा शेणखतातून द्यावे.',
+          safetyPrecautions:
+              'Store in cool, dark place away from direct sunlight. Do not mix with chemical fungicides.',
+          safetyPrecautionsMarathi:
+              'थंड व सावलीच्या ठिकाणी ठेवा. रासायनिक बुरशीनाशकासोबत मिसळू नका.',
+          categoryColor: Color(0xFF2E7D32),
+          onlineOffers: [
+            ProductOffer(
+              id: 'off_maha_h1',
+              sellerName: 'MahaAgri Direct',
+              marathiSellerName: 'महाअ‍ॅग्री डायरेक्ट',
+              price: 175.0,
+              packSize: '1 kg Pack',
+              inStock: true,
+              stockStatusText: 'In Stock',
+              stockStatusTextMarathi: 'उपलब्ध आहे',
+              offerUrl: 'https://mahaagri.gov.in',
+            ),
+          ],
+        ),
+      ];
+    }
+
     if (lower.contains('red') || lower.contains('rot') || lower.contains('लाल')) {
       return [
         const RecommendedProduct(
           id: 'prod_trichoderma_redrot',
           diseaseId: 'red_rot',
           name: 'Trichoderma viride Bio-Fungicide',
-          marathiName: 'ट्रायकोडर्मा व्हिरीडे • 1 kg Pack',
+          marathiName: 'ट्रायकोडर्मा व्हिरीडे (Trichoderma)',
           categoryTag: 'BIO-CONTROL / जैविक बुरशीनाशक',
           marathiCategoryTag: 'जैविक बुरशीनाशक (Bio-Fungicide)',
           packSize: '1 kg Pack',
@@ -122,7 +188,7 @@ class AgriProductService {
           id: 'prod_copper_redrot',
           diseaseId: 'red_rot',
           name: 'Copper Oxychloride 50% WP',
-          marathiName: 'कॉपर ऑक्सीक्लोराईड • 500 g Pack',
+          marathiName: 'कॉपर ऑक्सीक्लोराईड ५०% WP',
           categoryTag: 'REGISTERED FOLIAR PROTECTANT',
           marathiCategoryTag: 'प्रमाणित पानांवर फवारणी (Foliar Protectant)',
           packSize: '500 g Pack',
@@ -211,7 +277,7 @@ class AgriProductService {
           id: 'prod_carbendazim_redrot',
           diseaseId: 'red_rot',
           name: 'Carbendazim 50% WP (Sett Dipping)',
-          marathiName: 'कार्बेंडाझिम ५०% WP • 250 g Pack',
+          marathiName: 'कार्बेंडाझिम ५०% WP',
           categoryTag: 'SYSTEMIC TREATMENT',
           marathiCategoryTag: 'आंतरप्रवाही बुरशीनाशक (Systemic)',
           packSize: '250 g Pack',
@@ -303,7 +369,7 @@ class AgriProductService {
           id: 'prod_mancozeb_rust',
           diseaseId: 'rust',
           name: 'Mancozeb 75% WP Contact Protectant',
-          marathiName: 'मॅनकोझेब ७५% WP • 1 kg Pack',
+          marathiName: 'मॅनकोझेब ७५% WP',
           categoryTag: 'FOLIAR CONTACT FUNGICIDE',
           marathiCategoryTag: 'स्पर्शजन्य बुरशीनाशक',
           packSize: '1 kg Pack',
@@ -344,7 +410,7 @@ class AgriProductService {
         id: 'prod_trichoderma_general',
         diseaseId: 'general',
         name: 'Trichoderma viride Bio-Fungicide',
-        marathiName: 'ट्रायकोडर्मा व्हिरीडे • 1 kg Pack',
+        marathiName: 'ट्रायकोडर्मा व्हिरीडे (Trichoderma)',
         categoryTag: 'BIO-CONTROL / जैविक बुरशीनाशक',
         marathiCategoryTag: 'जैविक बुरशीनाशक',
         packSize: '1 kg Pack',
@@ -460,103 +526,441 @@ class AgriProductService {
     ];
   }
 
-  /// Get nearby Krishi Seva Kendras for a given region
-  static List<KrishiKendra> getNearbyKendras({String? region}) {
-    final selectedRegion = region ?? availableRegions.first;
+  /// Default farmer home coordinates (Bahadurpur village, near Shirdi / Rahata, Dist. Ahilyanagar)
+  static const double defaultFarmerLatitude = 19.7420;
+  static const double defaultFarmerLongitude = 74.5180;
 
-    if (selectedRegion.contains('Pune') || selectedRegion.contains('Baramati')) {
-      return const [
-        KrishiKendra(
-          id: 'kendra_baramati_1',
-          name: 'Baramati Krishi Seva Kendra',
-          marathiName: 'बारामती कृषी सेवा केंद्र',
-          isLicensed: true,
-          licenseNumber: 'LIC-MH-PUN-2022-7712',
-          address: 'Main Market Yard, Baramati',
-          marathiAddress: 'मुख्य मार्केट यार्ड, बारामती',
-          region: 'Pune & Baramati Sugar Belt',
-          distanceKm: 2.1,
-          phoneNumber: '+91 98221 44556',
-          inStockSummary: 'In Stock: Trichoderma & Copper WP',
-          inStockSummaryMarathi: 'उपलब्ध: ट्रायकोडर्मा व कॉपर WP',
-          latitude: 18.1528,
-          longitude: 74.5772,
-          rating: 4.8,
-        ),
-        KrishiKendra(
-          id: 'kendra_pune_2',
-          name: 'Sharada Krishi Bhandar',
-          marathiName: 'शारदा कृषी भांडार',
-          isLicensed: true,
-          licenseNumber: 'LIC-MH-PUN-2023-4109',
-          address: 'Station Road, Daund',
-          marathiAddress: 'स्टेशन रोड, दौंड',
-          region: 'Pune & Baramati Sugar Belt',
-          distanceKm: 4.6,
-          phoneNumber: '+91 94220 99881',
-          inStockSummary: 'In Stock: Carbendazim & Bio-Control',
-          inStockSummaryMarathi: 'उपलब्ध: कार्बेंडाझिम व बायो-कंट्रोल',
-          latitude: 18.4637,
-          longitude: 74.5794,
-          rating: 4.7,
-        ),
-      ];
+  /// Comprehensive registry of verified licensed Krishi Seva Kendras in Maharashtra
+  static const List<KrishiKendra> allRegisteredKendras = [
+    // --- 1. RAHATA, SHIRDI & BAHADURPUR BELT (AHMEDNAGAR / AHILYANAGAR) ---
+    KrishiKendra(
+      id: 'kendra_rahata_1',
+      name: 'Shree Ganesh Krishi Seva Kendra',
+      marathiName: 'श्री गणेश कृषी सेवा केंद्र',
+      isLicensed: true,
+      licenseNumber: 'LIC-MH-AHM-2023-8841',
+      address: 'Krishi Utpanna Bazar Samiti, Rahata',
+      marathiAddress: 'कृषी उत्पन्न बाजार समिती, राहाता, जि. अहिल्यानगर',
+      region: 'Ahmednagar (Ahilyanagar) Sugar Belt',
+      distanceKm: 4.2,
+      phoneNumber: '+91 98224 51234',
+      inStockSummary: 'In Stock: Trichoderma, Copper WP & Mancozeb',
+      inStockSummaryMarathi: 'उपलब्ध: ट्रायकोडर्मा, कॉपर WP, मॅन्कोझेब',
+      latitude: 19.7139,
+      longitude: 74.4925,
+      rating: 4.9,
+    ),
+    KrishiKendra(
+      id: 'kendra_shirdi_2',
+      name: 'Sai Samarth Agro Agency & Krishi Kendra',
+      marathiName: 'साई समर्थ ॲग्रो एजन्सी व कृषी केंद्र',
+      isLicensed: true,
+      licenseNumber: 'LIC-MH-AHM-2022-4190',
+      address: 'Pimpalwadi Road / Shirdi-Manmad Highway, Shirdi',
+      marathiAddress: 'पिंपळवाडी रोड / मनमाड हायवे, शिर्डी, जि. अहिल्यानगर',
+      region: 'Ahmednagar (Ahilyanagar) Sugar Belt',
+      distanceKm: 14.1,
+      phoneNumber: '+91 94231 67890',
+      inStockSummary: 'In Stock: Carbendazim & Trichoderma Bio-Fungicide',
+      inStockSummaryMarathi: 'उपलब्ध: ट्रायकोडर्मा, कार्बेंडाझिम बेणे प्रक्रिया औषधे',
+      latitude: 19.7645,
+      longitude: 74.4762,
+      rating: 4.8,
+    ),
+    KrishiKendra(
+      id: 'kendra_bahadurpur_3',
+      name: 'Godavari Shetkari Krishi Seva Kendra',
+      marathiName: 'गोदावरी शेतकरी कृषी सेवा केंद्र',
+      isLicensed: true,
+      licenseNumber: 'LIC-MH-AHM-2024-1102',
+      address: 'Sakuri-Rahata Road, Bahadurpur Phata',
+      marathiAddress: 'साकुरी-राहाता लिंक रोड, बहादूरपूर फाटा, जि. अहिल्यानगर',
+      region: 'Ahmednagar (Ahilyanagar) Sugar Belt',
+      distanceKm: 2.1,
+      phoneNumber: '+91 98500 11223',
+      inStockSummary: 'In Stock: Bio-Fungicides & Cane Micronutrients',
+      inStockSummaryMarathi: 'उपलब्ध: ट्रायकोडर्मा, ऊस सूक्ष्म अन्नद्रव्ये व खते',
+      latitude: 19.7280,
+      longitude: 74.5050,
+      rating: 4.8,
+    ),
+    KrishiKendra(
+      id: 'kendra_babhaleshwar_4',
+      name: 'Babhaleshwar Krishi Kendra',
+      marathiName: 'बाभळेश्वर कृषी केंद्र',
+      isLicensed: true,
+      licenseNumber: 'LIC-MH-AHM-2021-6678',
+      address: 'Main Chowk, Loni-Rahata Road, Babhaleshwar',
+      marathiAddress: 'बाभळेश्वर मुख्य चौक, लोणी रोड, जि. अहिल्यानगर',
+      region: 'Ahmednagar (Ahilyanagar) Sugar Belt',
+      distanceKm: 12.8,
+      phoneNumber: '+91 98230 77112',
+      inStockSummary: 'In Stock: Copper WP, Trichoderma & Sett Protectants',
+      inStockSummaryMarathi: 'उपलब्ध: कॉपर WP, ट्रायकोडर्मा व बेणे प्रक्रिया औषधे',
+      latitude: 19.6450,
+      longitude: 74.5420,
+      rating: 4.7,
+    ),
+
+    // --- 2. KOPARGAON & SHRIRAMPUR BELT ---
+    KrishiKendra(
+      id: 'kendra_kopargaon_5',
+      name: 'Kopargaon Sahakari Krishi Seva Kendra',
+      marathiName: 'कोपरगाव शेतकरी सहकारी कृषी सेवा केंद्र',
+      isLicensed: true,
+      licenseNumber: 'LIC-MH-AHM-2023-3391',
+      address: 'Main Market Yard, Kopargaon',
+      marathiAddress: 'मुख्य मार्केट यार्ड, कोपरगाव, जि. अहिल्यानगर',
+      region: 'Ahmednagar (Ahilyanagar) Sugar Belt',
+      distanceKm: 18.5,
+      phoneNumber: '+91 98220 44556',
+      inStockSummary: 'In Stock: Mancozeb 75% WP & Carbendazim 50% WP',
+      inStockSummaryMarathi: 'उपलब्ध: मॅन्कोझेब ७५% WP, कार्बेंडाझिम ५०% WP',
+      latitude: 19.8870,
+      longitude: 74.4828,
+      rating: 4.8,
+    ),
+    KrishiKendra(
+      id: 'kendra_shrirampur_6',
+      name: 'Shrirampur Shetkari Vikas Kendra',
+      marathiName: 'श्रीरामपूर शेतकरी विकास केंद्र',
+      isLicensed: true,
+      licenseNumber: 'LIC-MH-AHM-2022-7721',
+      address: 'Nevasa Road, Shrirampur',
+      marathiAddress: 'नेवासा रोड, श्रीरामपूर, जि. अहिल्यानगर',
+      region: 'Ahmednagar (Ahilyanagar) Sugar Belt',
+      distanceKm: 22.0,
+      phoneNumber: '+91 98233 88990',
+      inStockSummary: 'In Stock: Bio-Fungicides & Foliar Protectants',
+      inStockSummaryMarathi: 'उपलब्ध: ट्रायकोडर्मा, कॉपर ऑक्झिक्लोराईड',
+      latitude: 19.6200,
+      longitude: 74.6500,
+      rating: 4.7,
+    ),
+
+    // --- 3. SANGAMNER BELT ---
+    KrishiKendra(
+      id: 'kendra_sangamner_7',
+      name: 'Sangamner Agro Chemicals & Fertilizers',
+      marathiName: 'संगमनेर ॲग्रो केमिकल्स व खत विक्री केंद्र',
+      isLicensed: true,
+      licenseNumber: 'LIC-MH-AHM-2023-9988',
+      address: 'Akole Bypass Road, Sangamner',
+      marathiAddress: 'अकोले बायपास रोड, संगमनेर, जि. अहिल्यानगर',
+      region: 'Ahmednagar (Ahilyanagar) Sugar Belt',
+      distanceKm: 38.5,
+      phoneNumber: '+91 94222 33445',
+      inStockSummary: 'In Stock: Full Sugarcane Protection Range',
+      inStockSummaryMarathi: 'उपलब्ध: सर्व शिफारशीत ऊस बुरशीनाशके व खते',
+      latitude: 19.5700,
+      longitude: 74.2100,
+      rating: 4.9,
+    ),
+    KrishiKendra(
+      id: 'kendra_sangamner_8',
+      name: 'Amruta Krishi Seva Kendra',
+      marathiName: 'अमृता कृषी सेवा केंद्र',
+      isLicensed: true,
+      licenseNumber: 'LIC-MH-AHM-2021-5509',
+      address: 'Near New Bus Stand, Sangamner',
+      marathiAddress: 'नवीन बस स्थानक परिसर, संगमनेर, जि. अहिल्यानगर',
+      region: 'Ahmednagar (Ahilyanagar) Sugar Belt',
+      distanceKm: 39.0,
+      phoneNumber: '+91 98600 77889',
+      inStockSummary: 'In Stock: Biological Cultures & Sett Dipping',
+      inStockSummaryMarathi: 'उपलब्ध: ट्रायकोडर्मा व आंतरप्रवाही बुरशीनाशक',
+      latitude: 19.5780,
+      longitude: 74.2150,
+      rating: 4.7,
+    ),
+
+    // --- 4. NASHIK & SINNAR BELT ---
+    KrishiKendra(
+      id: 'kendra_sinnar_9',
+      name: 'Sinnar Agro Services',
+      marathiName: 'सिन्नर ॲग्रो सर्व्हिसेस',
+      isLicensed: true,
+      licenseNumber: 'LIC-MH-NSK-2023-3112',
+      address: 'Pune-Nashik Highway, Sinnar',
+      marathiAddress: 'पुणे-नाशिक हायवे, सिन्नर, जि. नाशिक',
+      region: 'Nashik & Niphad Agro Region',
+      distanceKm: 56.2,
+      phoneNumber: '+91 98228 99112',
+      inStockSummary: 'In Stock: Trichoderma & Copper Oxychloride',
+      inStockSummaryMarathi: 'उपलब्ध: ट्रायकोडर्मा व कॉपर बुरशीनाशक',
+      latitude: 19.8450,
+      longitude: 73.9980,
+      rating: 4.8,
+    ),
+    KrishiKendra(
+      id: 'kendra_nashik_10',
+      name: 'Nashik Zilla Krishi Udyog Kendra',
+      marathiName: 'नाशिक जिल्हा कृषी उद्योग केंद्र',
+      isLicensed: true,
+      licenseNumber: 'LIC-MH-NSK-2022-8810',
+      address: 'Dwarka Circle / Old CBS, Nashik',
+      marathiAddress: 'द्वारका सर्कल / सीबीएस, नाशिक',
+      region: 'Nashik & Niphad Agro Region',
+      distanceKm: 85.1,
+      phoneNumber: '+91 98505 66778',
+      inStockSummary: 'In Stock: CIBRC Registered Cane Protectants',
+      inStockSummaryMarathi: 'उपलब्ध: प्रमाणित सर्व कीटकनाशके व बुरशीनाशके',
+      latitude: 19.9975,
+      longitude: 73.7898,
+      rating: 4.9,
+    ),
+    KrishiKendra(
+      id: 'kendra_nashik_11',
+      name: 'Panchavati Krishi Seva Kendra',
+      marathiName: 'पंचवटी कृषी सेवा केंद्र',
+      isLicensed: true,
+      licenseNumber: 'LIC-MH-NSK-2024-4421',
+      address: 'Dindori Road, Panchavati, Nashik',
+      marathiAddress: 'दिंडोरी रोड, पंचवटी, नाशिक',
+      region: 'Nashik & Niphad Agro Region',
+      distanceKm: 87.9,
+      phoneNumber: '+91 94227 44556',
+      inStockSummary: 'In Stock: Bio-Fungicides & Soluble Nutrients',
+      inStockSummaryMarathi: 'उपलब्ध: जैविक औषधे व सूक्ष्म अन्नद्रव्ये',
+      latitude: 20.0150,
+      longitude: 73.7950,
+      rating: 4.7,
+    ),
+
+    // --- 5. AHMEDNAGAR (AHILYANAGAR) CITY / MIDC ---
+    KrishiKendra(
+      id: 'kendra_nagar_12',
+      name: 'Ahmednagar Zilla Shetkari Kendra',
+      marathiName: 'अहमदनगर जिल्हा शेतकरी खरेदी विक्री संघ',
+      isLicensed: true,
+      licenseNumber: 'LIC-MH-AHM-2021-1200',
+      address: 'Main Market Yard, Ahmednagar',
+      marathiAddress: 'मुख्य मार्केट यार्ड, अहिल्यानगर',
+      region: 'Ahmednagar (Ahilyanagar) Sugar Belt',
+      distanceKm: 78.4,
+      phoneNumber: '+91 94237 88991',
+      inStockSummary: 'In Stock: Certified Agro Inputs & Fungicides',
+      inStockSummaryMarathi: 'उपलब्ध: शासकीय प्रमाणित बुरशीनाशके व औषधे',
+      latitude: 19.0948,
+      longitude: 74.7480,
+      rating: 4.8,
+    ),
+
+    // --- 6. PUNE & BARAMATI SUGAR BELT ---
+    KrishiKendra(
+      id: 'kendra_baramati_13',
+      name: 'Baramati Krishi Seva Kendra',
+      marathiName: 'बारामती कृषी सेवा केंद्र',
+      isLicensed: true,
+      licenseNumber: 'LIC-MH-PUN-2022-7712',
+      address: 'Main Market Yard, Baramati',
+      marathiAddress: 'मुख्य मार्केट यार्ड, बारामती',
+      region: 'Pune & Baramati Sugar Belt',
+      distanceKm: 170.0,
+      phoneNumber: '+91 98221 44556',
+      inStockSummary: 'In Stock: Trichoderma & Copper WP',
+      inStockSummaryMarathi: 'उपलब्ध: ट्रायकोडर्मा व कॉपर WP',
+      latitude: 18.1528,
+      longitude: 74.5772,
+      rating: 4.8,
+    ),
+    KrishiKendra(
+      id: 'kendra_pune_14',
+      name: 'Sharada Krishi Bhandar',
+      marathiName: 'शारदा कृषी भांडार',
+      isLicensed: true,
+      licenseNumber: 'LIC-MH-PUN-2023-4109',
+      address: 'Station Road, Daund',
+      marathiAddress: 'स्टेशन रोड, दौंड',
+      region: 'Pune & Baramati Sugar Belt',
+      distanceKm: 145.0,
+      phoneNumber: '+91 94220 99881',
+      inStockSummary: 'In Stock: Carbendazim & Bio-Control',
+      inStockSummaryMarathi: 'उपलब्ध: कार्बेंडाझिम व बायो-कंट्रोल',
+      latitude: 18.4637,
+      longitude: 74.5794,
+      rating: 4.7,
+    ),
+
+    // --- 7. SATARA & KOLHAPUR REGION ---
+    KrishiKendra(
+      id: 'kendra_satara_15',
+      name: 'Shree Ganesh Krishi Seva Kendra (Satara)',
+      marathiName: 'श्री गणेश कृषी सेवा केंद्र (सातारा)',
+      isLicensed: true,
+      licenseNumber: 'LIC-MH-STR-2023-8841',
+      address: 'Market Yard, Satara',
+      marathiAddress: 'मार्केट यार्ड, सातारा',
+      region: 'Satara & Kolhapur Region, Maharashtra',
+      distanceKm: 235.0,
+      phoneNumber: '+91 98220 12345',
+      inStockSummary: 'In Stock: Trichoderma & Copper WP',
+      inStockSummaryMarathi: 'उपलब्ध: ट्रायकोडर्मा आणि कॉपर WP',
+      latitude: 17.6805,
+      longitude: 74.0183,
+      rating: 4.9,
+    ),
+    KrishiKendra(
+      id: 'kendra_kolhapur_16',
+      name: 'Kisan Vikas Agro Agency',
+      marathiName: 'किसान विकास अ‍ॅग्रो एजन्सी',
+      isLicensed: true,
+      licenseNumber: 'LIC-MH-KOP-2021-3920',
+      address: 'Old MIDC Road, Kolhapur',
+      marathiAddress: 'जुना एमआयडीसी रोड, कोल्हापूर',
+      region: 'Satara & Kolhapur Region, Maharashtra',
+      distanceKm: 340.0,
+      phoneNumber: '+91 94230 67890',
+      inStockSummary: 'In Stock: Carbendazim & Copper WP',
+      inStockSummaryMarathi: 'उपलब्ध: कार्बेंडाझिम आणि कॉपर WP',
+      latitude: 16.7050,
+      longitude: 74.2433,
+      rating: 4.8,
+    ),
+  ];
+
+  /// Get current user location using live device GPS, falling back to farmer's home in Bahadurpur/Shirdi
+  static Future<UserLocationInfo> getCurrentUserLocation({bool forceRefresh = false}) async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (serviceEnabled) {
+        LocationPermission permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.denied) {
+          permission = await Geolocator.requestPermission();
+        }
+
+        if (permission == LocationPermission.whileInUse ||
+            permission == LocationPermission.always) {
+          Position? position;
+          if (!forceRefresh) {
+            position = await Geolocator.getLastKnownPosition();
+          }
+          position ??= await Geolocator.getCurrentPosition(
+            locationSettings: const LocationSettings(
+              accuracy: LocationAccuracy.medium,
+              timeLimit: Duration(seconds: 4),
+            ),
+          );
+
+          if (position != null) {
+            final lat = position.latitude;
+            final lng = position.longitude;
+
+            // Compute distances to major regional clusters
+            final dBahadurpur = Geolocator.distanceBetween(lat, lng, 19.7420, 74.5180) / 1000.0;
+            final dShirdi = Geolocator.distanceBetween(lat, lng, 19.7645, 74.4762) / 1000.0;
+            final dRahata = Geolocator.distanceBetween(lat, lng, 19.7139, 74.4925) / 1000.0;
+            final dKopargaon = Geolocator.distanceBetween(lat, lng, 19.8870, 74.4828) / 1000.0;
+            final dShrirampur = Geolocator.distanceBetween(lat, lng, 19.6200, 74.6500) / 1000.0;
+            final dSangamner = Geolocator.distanceBetween(lat, lng, 19.5700, 74.2100) / 1000.0;
+            final dSinnar = Geolocator.distanceBetween(lat, lng, 19.8450, 73.9980) / 1000.0;
+            final dNashik = Geolocator.distanceBetween(lat, lng, 19.9975, 73.7898) / 1000.0;
+            final dNagar = Geolocator.distanceBetween(lat, lng, 19.0948, 74.7480) / 1000.0;
+            final dPune = Geolocator.distanceBetween(lat, lng, 18.5204, 73.8567) / 1000.0;
+            final dSatara = Geolocator.distanceBetween(lat, lng, 17.6805, 74.0183) / 1000.0;
+
+            String name;
+            String short;
+
+            if (dBahadurpur <= 18 || dShirdi <= 20 || dRahata <= 18) {
+              name = 'बहादूरपूर / राहाता परिसर (शिर्डी जवळ, अहिल्यानगर)';
+              short = 'बहादूरपूर / शिर्डी';
+            } else if (dKopargaon <= 20) {
+              name = 'कोपरगाव परिसर (अहिल्यानगर)';
+              short = 'कोपरगाव';
+            } else if (dShrirampur <= 20) {
+              name = 'श्रीरामपूर परिसर (अहिल्यानगर)';
+              short = 'श्रीरामपूर';
+            } else if (dSangamner <= 25) {
+              name = 'संगमनेर परिसर (अहिल्यानगर)';
+              short = 'संगमनेर';
+            } else if (dSinnar <= 25) {
+              name = 'सिन्नर परिसर (नाशिक जिल्हा)';
+              short = 'सिन्नर';
+            } else if (dNashik <= 30) {
+              name = 'नाशिक शहर व परिसर';
+              short = 'नाशिक';
+            } else if (dNagar <= 30) {
+              name = 'अहमदनगर (अहिल्यानगर) परिसर';
+              short = 'अहिल्यानगर';
+            } else if (dPune <= 35) {
+              name = 'पुणे / बारामती परिसर';
+              short = 'पुणे / बारामती';
+            } else if (dSatara <= 40) {
+              name = 'सातारा / कोल्हापूर परिसर';
+              short = 'सातारा';
+            } else {
+              name = 'थेट GPS स्थान (${lat.toStringAsFixed(2)}, ${lng.toStringAsFixed(2)})';
+              short = 'थेट स्थान';
+            }
+
+            return UserLocationInfo(
+              latitude: lat,
+              longitude: lng,
+              locationName: name,
+              shortName: short,
+              isLiveGps: true,
+            );
+          }
+        }
+      }
+    } catch (_) {}
+
+    // Default Fallback: Farmer's home in Bahadurpur, near Shirdi / Rahata
+    return const UserLocationInfo(
+      latitude: defaultFarmerLatitude,
+      longitude: defaultFarmerLongitude,
+      locationName: 'बहादूरपूर / राहाता परिसर (शिर्डी जवळ, अहिल्यानगर)',
+      shortName: 'बहादूरपूर (शिर्डी)',
+      isLiveGps: false,
+    );
+  }
+
+  /// Calculate real-world geodesic distances and filter kendras within maximum distance (default 100 km)
+  static List<KrishiKendra> getKendrasNearLocation({
+    required double latitude,
+    required double longitude,
+    double maxDistanceKm = 100.0,
+  }) {
+    final list = allRegisteredKendras.map((k) {
+      final meters = Geolocator.distanceBetween(
+        latitude,
+        longitude,
+        k.latitude,
+        k.longitude,
+      );
+      final distKm = double.parse((meters / 1000.0).toStringAsFixed(1));
+      return k.copyWith(distanceKm: distKm);
+    }).toList();
+
+    // Filter within maxDistanceKm
+    var filtered = list.where((k) => k.distanceKm <= maxDistanceKm).toList();
+
+    // If none within radius (e.g. strict radius), fall back to nearest 4
+    if (filtered.isEmpty) {
+      list.sort((a, b) => a.distanceKm.compareTo(b.distanceKm));
+      filtered = list.take(4).toList();
+    } else {
+      filtered.sort((a, b) => a.distanceKm.compareTo(b.distanceKm));
     }
 
-    // Default: Satara & Kolhapur Region (Exactly as shown in Figma Screen 5!)
-    return const [
-      KrishiKendra(
-        id: 'kendra_satara_1',
-        name: 'Shree Ganesh Krishi Seva Kendra',
-        marathiName: 'श्री गणेश कृषी सेवा केंद्र',
-        isLicensed: true,
-        licenseNumber: 'LIC-MH-STR-2023-8841',
-        address: 'Market Yard, Satara',
-        marathiAddress: 'मार्केट यार्ड, सातारा',
-        region: 'Satara & Kolhapur Region, Maharashtra',
-        distanceKm: 1.8,
-        phoneNumber: '+91 98220 12345',
-        inStockSummary: 'In Stock: Trichoderma & Copper WP',
-        inStockSummaryMarathi: 'उपलब्ध: ट्रायकोडर्मा आणि कॉपर WP',
-        latitude: 17.6805,
-        longitude: 74.0183,
-        rating: 4.9,
-      ),
-      KrishiKendra(
-        id: 'kendra_kolhapur_2',
-        name: 'Kisan Vikas Agro Agency',
-        marathiName: 'किसान विकास अ‍ॅग्रो एजन्सी',
-        isLicensed: true,
-        licenseNumber: 'LIC-MH-KOP-2021-3920',
-        address: 'Old MIDC Road, Kolhapur',
-        marathiAddress: 'जुना एमआयडीसी रोड, कोल्हापूर',
-        region: 'Satara & Kolhapur Region, Maharashtra',
-        distanceKm: 3.2,
-        phoneNumber: '+91 94230 67890',
-        inStockSummary: 'In Stock: Carbendazim & Copper WP',
-        inStockSummaryMarathi: 'उपलब्ध: कार्बेंडाझिम आणि कॉपर WP',
-        latitude: 16.7050,
-        longitude: 74.2433,
-        rating: 4.8,
-      ),
-      KrishiKendra(
-        id: 'kendra_karad_3',
-        name: 'Baliraja Krishi Seva Kendra',
-        marathiName: 'बळीराजा कृषी सेवा केंद्र',
-        isLicensed: true,
-        licenseNumber: 'LIC-MH-STR-2024-5511',
-        address: 'Pune-Bangalore Highway, Karad',
-        marathiAddress: 'पुणे-बंगलोर हायवे, कराड',
-        region: 'Satara & Kolhapur Region, Maharashtra',
-        distanceKm: 4.5,
-        phoneNumber: '+91 98500 33221',
-        inStockSummary: 'In Stock: All Recommended Protectants',
-        inStockSummaryMarathi: 'उपलब्ध: सर्व शिफारशीत बुरशीनाशके',
-        latitude: 17.2894,
-        longitude: 74.1813,
-        rating: 4.7,
-      ),
-    ];
+    return filtered;
+  }
+
+  /// Get nearby Krishi Seva Kendras with live geodesic distance (default radius: 100 km)
+  static List<KrishiKendra> getNearbyKendras({
+    String? region,
+    double? latitude,
+    double? longitude,
+    double maxDistanceKm = 100.0,
+  }) {
+    final lat = latitude ?? defaultFarmerLatitude;
+    final lng = longitude ?? defaultFarmerLongitude;
+    return getKendrasNearLocation(
+      latitude: lat,
+      longitude: lng,
+      maxDistanceKm: maxDistanceKm,
+    );
   }
 
   /// Launch phone call to Krishi Kendra
@@ -579,21 +983,26 @@ class AgriProductService {
     }
   }
 
-  /// Launch directions to Krishi Kendra in Google Maps
+  /// Launch turn-by-turn directions to Krishi Kendra in Google Maps from current GPS location
   static Future<void> openDirections(
       BuildContext context, KrishiKendra shop) async {
+    // Official Google Maps Navigation Intent with destination coordinates
+    final Uri dirUri = Uri.parse(
+        'https://www.google.com/maps/dir/?api=1&destination=${shop.latitude},${shop.longitude}&travelmode=driving');
     final encodedQuery = Uri.encodeComponent('${shop.name}, ${shop.address}');
-    final Uri mapsUri = Uri.parse(
+    final Uri searchUri = Uri.parse(
         'https://www.google.com/maps/search/?api=1&query=$encodedQuery');
 
     try {
-      if (await canLaunchUrl(mapsUri)) {
-        await launchUrl(mapsUri, mode: LaunchMode.externalApplication);
+      if (await canLaunchUrl(dirUri)) {
+        await launchUrl(dirUri, mode: LaunchMode.externalApplication);
+      } else if (await canLaunchUrl(searchUri)) {
+        await launchUrl(searchUri, mode: LaunchMode.externalApplication);
       } else {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Opening directions to ${shop.name}...'),
+              content: Text('${shop.name}: ${shop.address} (${shop.distanceKm} km away)'),
               backgroundColor: const Color(0xFF165228),
             ),
           );

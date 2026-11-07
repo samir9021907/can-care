@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import '../localization/app_localizations.dart';
 import '../providers/auth_provider.dart';
 import '../widgets/farmer_avatar_widget.dart';
+import '../widgets/top_notification.dart';
 import '../models/disease_info.dart';
 import 'crop_tips_screen.dart';
 import 'disease_detail_screen.dart';
@@ -38,8 +40,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // Track checked farm tasks
-  final Set<int> _completedTasks = {0};
+  // Track checked farm tasks (persisted)
+  final Set<int> _completedTasks = {};
   String? _liveLocation;
   int? _liveTemp;
   bool _isLiveGps = false;
@@ -48,6 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadLiveWeather();
+    _loadCompletedTasks();
   }
 
   Future<void> _loadLiveWeather() async {
@@ -66,14 +69,54 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (_) {}
   }
 
-  void _toggleTask(int index) {
+  Future<void> _loadCompletedTasks() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final list = prefs.getStringList('home_completed_farm_tasks');
+      if (mounted) {
+        setState(() {
+          _completedTasks.clear();
+          if (list != null) {
+            _completedTasks.addAll(list.map((e) => int.tryParse(e) ?? 0));
+          }
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _saveCompletedTasks() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(
+        'home_completed_farm_tasks',
+        _completedTasks.map((e) => e.toString()).toList(),
+      );
+    } catch (_) {}
+  }
+
+  void _toggleTask(int index, String taskTitle) {
+    HapticFeedback.lightImpact();
+    final wasDone = _completedTasks.contains(index);
     setState(() {
-      if (_completedTasks.contains(index)) {
+      if (wasDone) {
         _completedTasks.remove(index);
       } else {
         _completedTasks.add(index);
       }
     });
+    _saveCompletedTasks();
+
+    final isNowDone = !wasDone;
+    TopNotification.show(
+      context,
+      title: isNowDone
+          ? _t('काम पूर्ण झाले!', 'कार्य पूर्ण हुआ!', 'Task completed!')
+          : _t('काम प्रलंबित केले', 'कार्य लंबित किया', 'Task marked pending'),
+      subtitle: taskTitle,
+      icon: isNowDone ? Icons.task_alt_rounded : Icons.radio_button_unchecked,
+      backgroundColor:
+          isNowDone ? const Color(0xFF14451D) : const Color(0xFF37474F),
+    );
   }
 
   void _openDiseaseByName(String id) {
@@ -147,7 +190,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         fontWeight: FontWeight.w800,
                         color: Color(0xFF14451D),
                         letterSpacing: -0.3,
-                      ),
+                      ), 
                     ),
                   ),
                   InkWell(
@@ -227,24 +270,53 @@ class _HomeScreenState extends State<HomeScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
-                    child: Text(
-                      _t("आजची शेती कामे", "आज के कृषि कार्य", "Today's Farm Tasks"),
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF14451D),
-                        letterSpacing: -0.3,
-                      ),
+                    child: Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            _t("आजची शेती कामे", "आज के कृषि कार्य", "Today's Farm Tasks"),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF14451D),
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2.5),
+                          decoration: BoxDecoration(
+                            color: _completedTasks.length == 3
+                                ? const Color(0xFFE8F5E9)
+                                : const Color(0xFFF1F5EE),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: _completedTasks.length == 3
+                                  ? const Color(0xFF81C784)
+                                  : const Color(0xFFDCE8DC),
+                            ),
+                          ),
+                          child: Text(
+                            _completedTasks.length == 3
+                                ? _t('सर्व पूर्ण ✓', 'सभी पूर्ण ✓', 'All Done ✓')
+                                : '${_completedTasks.length}/3 ${_t('पूर्ण', 'पूर्ण', 'Done')}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: _completedTasks.length == 3
+                                  ? const Color(0xFF165228)
+                                  : const Color(0xFF475569),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   InkWell(
                     onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(_t('शेती कामे अद्ययावत आहेत.', 'कृषि कार्य अद्यतित हैं।', 'Farm task manager is up to date.')),
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
+                      _showFarmTasksOverviewModal(context);
                     },
                     borderRadius: BorderRadius.circular(8),
                     child: Padding(
@@ -1311,6 +1383,125 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _showFarmTasksOverviewModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(22),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE8F5E9),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.checklist_rounded,
+                          color: Color(0xFF165228), size: 22),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      _t('दैनिक शेती कामे नियोजन', 'दैनिक कृषि कार्य योजना',
+                          'Daily Farm Tasks Plan'),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF14451D),
+                      ),
+                    ),
+                  ],
+                ),
+                IconButton(
+                  icon:
+                      const Icon(Icons.close_rounded, color: Color(0xFF6B8074)),
+                  onPressed: () => Navigator.pop(ctx),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              _t(
+                'उसाच्या दर्जेदार उत्पादनासाठी दररोज सिंचन, कीड निरीक्षण व शेताची पाहणी वेळच्या वेळी पूर्ण करा.',
+                'गन्ने की अच्छी उपज के लिए नियमित सिंचाई, कीट निरीक्षण और खेत की जांच समय पर करें।',
+                'Perform timely irrigation, pest surveillance, and field scouting for maximum sugarcane yield.',
+              ),
+              style: const TextStyle(
+                fontSize: 13,
+                color: Color(0xFF475569),
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF7FAF5),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFDCE8DC)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _t('आजची प्रगती:', 'आज की प्रगति:', 'Today\'s Progress:'),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF14451D),
+                    ),
+                  ),
+                  Text(
+                    '${_completedTasks.length} / 3 ${_t('कामे पूर्ण', 'कार्य पूर्ण', 'tasks done')}',
+                    style: const TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF165228),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 18),
+            SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(ctx),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF165228),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  _t('समजले (Got it)', 'समझ गया (Got it)', 'Got It'),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildFarmTasksCard() {
     return Container(
       decoration: BoxDecoration(
@@ -1332,7 +1523,10 @@ class _HomeScreenState extends State<HomeScreen> {
             iconBg: const Color(0xFFE3F2FD),
             icon: Icons.science_outlined,
             iconColor: const Color(0xFF1976D2),
-            title: _t('पिकाला पाणी द्या (पाणी व्यवस्थापन)', 'फसल को पानी दें (सिंचाई प्रबंधन)', 'Water the crop'),
+            title: _t('पिकाला पाणी द्या (पाणी व्यवस्थापन)',
+                'फसल को पानी दें (सिंचाई प्रबंधन)', 'Water the crop'),
+            subtitle: _t('ठिबक सिंचन २ तास चालू ठेवा', 'ड्रिप सिंचाई २ घंटे चलाएं',
+                'Run drip cycle for 2 hours'),
           ),
           const Divider(height: 1, color: Color(0xFFF0F4F1)),
           _buildTaskItem(
@@ -1340,7 +1534,12 @@ class _HomeScreenState extends State<HomeScreen> {
             iconBg: const Color(0xFFE8F5E9),
             icon: Icons.sync,
             iconColor: const Color(0xFF2E7D32),
-            title: _t('ऊसाची पाने तपासा (कीड निरीक्षण)', 'गन्ने की पत्तियां देखें (कीट निरीक्षण)', 'Check sugarcane leaves'),
+            title: _t('ऊसाची पाने तपासा (कीड निरीक्षण)',
+                'गन्ने की पत्तियां देखें (कीट निरीक्षण)',
+                'Check sugarcane leaves'),
+            subtitle: _t('पानांमागील तांबूस किंवा पिवळे डाग तपासा',
+                'पत्तियों पर लाल या पीले धब्बे देखें',
+                'Inspect for rust/yellow spots'),
           ),
           const Divider(height: 1, color: Color(0xFFF0F4F1)),
           _buildTaskItem(
@@ -1348,7 +1547,10 @@ class _HomeScreenState extends State<HomeScreen> {
             iconBg: const Color(0xFFFFF3E0),
             icon: Icons.search_rounded,
             iconColor: const Color(0xFFF57C00),
-            title: _t('शेताची फेरफटका मारून पाहणी करा', 'खेत का मुआयना करें', 'Inspect the field'),
+            title: _t('शेताची फेरफटका मारून पाहणी करा', 'खेत का मुआयना करें',
+                'Inspect the field'),
+            subtitle: _t('उसाच्या वाढीची व जमिनीतील ओलावा स्थिती',
+                'पौधों की वृद्धि व नमी की स्थिति', 'Inspect cane vigor and soil'),
           ),
         ],
       ),
@@ -1361,65 +1563,90 @@ class _HomeScreenState extends State<HomeScreen> {
     required IconData icon,
     required Color iconColor,
     required String title,
+    String? subtitle,
   }) {
     final isDone = _completedTasks.contains(index);
 
     return InkWell(
-      onTap: () => _toggleTask(index),
+      onTap: () => _toggleTask(index, title),
       borderRadius: BorderRadius.circular(16),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        decoration: BoxDecoration(
+          color: isDone ? const Color(0xFFF4F9F4) : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
             Container(
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: iconBg,
+                color: isDone ? const Color(0xFFE8F5E9) : iconBg,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: iconColor, size: 20),
+              child: Icon(
+                isDone ? Icons.task_alt_rounded : icon,
+                color: isDone ? const Color(0xFF165228) : iconColor,
+                size: 20,
+              ),
             ),
             const SizedBox(width: 14),
             Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 14.5,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF153826),
-                  decoration:
-                      isDone ? TextDecoration.lineThrough : TextDecoration.none,
-                  decorationColor: const Color(0xFF2E7D32),
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 14.5,
+                      fontWeight: isDone ? FontWeight.w800 : FontWeight.w700,
+                      color: isDone
+                          ? const Color(0xFF14451D)
+                          : const Color(0xFF153826),
+                      decoration: TextDecoration.none, // Never show strikethrough line
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: isDone
+                            ? const Color(0xFF2E7D32)
+                            : const Color(0xFF6B8074),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
-            if (isDone)
-              Container(
-                width: 24,
-                height: 24,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF2E7D32),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.check,
-                  color: Colors.white,
-                  size: 16,
-                ),
-              )
-            else
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: const Color(0xFFCFD8DC),
-                    width: 2,
-                  ),
+            const SizedBox(width: 8),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color: isDone ? const Color(0xFF2E7D32) : Colors.transparent,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isDone
+                      ? const Color(0xFF2E7D32)
+                      : const Color(0xFFCFD8DC),
+                  width: 2,
                 ),
               ),
+              child: isDone
+                  ? const Icon(
+                      Icons.check_rounded,
+                      color: Colors.white,
+                      size: 16,
+                    )
+                  : null,
+            ),
           ],
         ),
       ),

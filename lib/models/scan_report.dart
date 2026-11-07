@@ -1,5 +1,6 @@
 import '../localization/app_localizations.dart';
 import 'disease_info.dart';
+export 'disease_info.dart';
 import 'prediction_result.dart';
 
 class ScanReport {

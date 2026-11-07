@@ -11,6 +11,7 @@ import '../models/scan_report.dart';
 import '../providers/history_provider.dart';
 import '../providers/scan_provider.dart';
 import '../services/agri_product_service.dart';
+import '../widgets/nearby_krishi_kendras_widget.dart';
 import 'ask_question_screen.dart';
 import 'disease_detail_screen.dart';
 import 'history_screen.dart';
@@ -291,8 +292,8 @@ class _DiseaseResultScreenState extends State<DiseaseResultScreen> {
             _buildComparePricesSection(context, recommendedProducts),
             const SizedBox(height: 24),
 
-            // 6. Find Near Me - Krishi Seva Kendras (Figma Screen 5)
-            _buildFindNearMeSection(context, nearbyKendras),
+            // 6. Find Near Me - Krishi Seva Kendras (थेट GPS लाइव्ह ट्रॅकिंग)
+            const NearbyKrishiKendrasWidget(initialRadiusKm: 100.0),
             const SizedBox(height: 10),
 
             // Verified Dealers Registration Footer (from Screenshot 6)
@@ -1110,6 +1111,7 @@ class _DiseaseResultScreenState extends State<DiseaseResultScreen> {
 
   Widget _buildProductCard(BuildContext context, RecommendedProduct product) {
     return Container(
+      width: double.infinity,
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
