@@ -18,8 +18,13 @@ import 'sign_in_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   final VoidCallback onNavigateToHistory;
+  final VoidCallback? onNavigateBack;
 
-  const ProfileScreen({super.key, required this.onNavigateToHistory});
+  const ProfileScreen({
+    super.key,
+    required this.onNavigateToHistory,
+    this.onNavigateBack,
+  });
 
   void _handleLogout(BuildContext context) async {
     final loc = AppLocalizations.of(context);
@@ -65,6 +70,13 @@ class ProfileScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: const Color(0xFFF7FAF5),
         elevation: 0,
+        leading: (onNavigateBack != null || Navigator.canPop(context))
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back, color: Color(0xFF14451D)),
+                tooltip: 'मागे जा',
+                onPressed: onNavigateBack ?? () => Navigator.maybePop(context),
+              )
+            : null,
         title: Text(
           loc.translate('profile_title'),
           style: const TextStyle(

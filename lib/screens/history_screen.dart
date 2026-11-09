@@ -8,7 +8,6 @@ import '../widgets/history_card.dart';
 import '../widgets/empty_state_view.dart';
 import '../widgets/error_state_view.dart';
 import '../widgets/top_notification.dart';
-import 'saved_report_detail_screen.dart';
 import 'disease_detail_screen.dart';
 
 class _WeeklyHealthBucket {
@@ -48,8 +47,13 @@ class _WeeklyHealthBucket {
 
 class HistoryScreen extends StatefulWidget {
   final VoidCallback onNavigateToScan;
+  final VoidCallback? onNavigateBack;
 
-  const HistoryScreen({super.key, required this.onNavigateToScan});
+  const HistoryScreen({
+    super.key,
+    required this.onNavigateToScan,
+    this.onNavigateBack,
+  });
 
   @override
   State<HistoryScreen> createState() => _HistoryScreenState();
@@ -79,7 +83,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   Future<void> _pickDateRange(BuildContext context) async {
     final now = DateTime.now();
-    final messenger = ScaffoldMessenger.of(context);
     final picked = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2024, 1, 1),
@@ -592,14 +595,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
         backgroundColor: const Color(0xFFF7FAF5),
         elevation: 0,
         leadingWidth: 46,
-        leading: const Padding(
-          padding: EdgeInsets.only(left: 18),
-          child: Icon(
-            Icons.article_outlined,
-            color: Color(0xFF14451D),
-            size: 24,
-          ),
-        ),
+        leading: (widget.onNavigateBack != null || Navigator.canPop(context))
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back, color: Color(0xFF14451D)),
+                tooltip: 'मागे जा',
+                onPressed: widget.onNavigateBack ?? () => Navigator.maybePop(context),
+              )
+            : const Padding(
+                padding: EdgeInsets.only(left: 18),
+                child: Icon(
+                  Icons.article_outlined,
+                  color: Color(0xFF14451D),
+                  size: 24,
+                ),
+              ),
         title: Text(
           loc.language == AppLanguage.marathi
               ? 'स्कॅन इतिहास'

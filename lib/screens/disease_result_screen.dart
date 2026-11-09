@@ -253,8 +253,6 @@ class _DiseaseResultScreenState extends State<DiseaseResultScreen> {
     final recommendedProducts =
         AgriProductService.getProductsForDisease(result.diseaseName);
     final actionSteps = AgriProductService.getActionSteps(result.diseaseName);
-    final nearbyKendras =
-        AgriProductService.getNearbyKendras(region: _selectedRegion);
 
     // Formatted date and time
     final timeStr = DateFormat('hh:mm a').format(result.analyzedAt);

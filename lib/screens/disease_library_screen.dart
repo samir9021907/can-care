@@ -11,7 +11,9 @@ import 'scan_camera_screen.dart';
 import 'ask_question_screen.dart';
 
 class DiseaseLibraryScreen extends StatefulWidget {
-  const DiseaseLibraryScreen({super.key});
+  final VoidCallback? onNavigateBack;
+
+  const DiseaseLibraryScreen({super.key, this.onNavigateBack});
 
   @override
   State<DiseaseLibraryScreen> createState() => _DiseaseLibraryScreenState();
@@ -39,14 +41,20 @@ class _DiseaseLibraryScreenState extends State<DiseaseLibraryScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFFF7FAF5),
         elevation: 0,
-        leading: const Padding(
-          padding: EdgeInsets.only(left: 18),
-          child: Icon(
-            Icons.menu_book_outlined,
-            color: Color(0xFF14451D),
-            size: 24,
-          ),
-        ),
+        leading: (widget.onNavigateBack != null || Navigator.canPop(context))
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back, color: Color(0xFF14451D)),
+                tooltip: 'मागे जा',
+                onPressed: widget.onNavigateBack ?? () => Navigator.maybePop(context),
+              )
+            : const Padding(
+                padding: EdgeInsets.only(left: 18),
+                child: Icon(
+                  Icons.menu_book_outlined,
+                  color: Color(0xFF14451D),
+                  size: 24,
+                ),
+              ),
         leadingWidth: 46,
         title: Text(
           lang == AppLanguage.marathi

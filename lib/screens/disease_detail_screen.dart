@@ -29,7 +29,6 @@ class DiseaseDetailScreen extends StatelessWidget {
     final expertNote = disease.treatment.getExpertNote(lang);
     final recommendedProducts =
         AgriProductService.getProductsForDisease(disease.id);
-    final nearbyKendras = AgriProductService.getNearbyKendras();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF7FAF5),

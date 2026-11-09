@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -84,7 +83,6 @@ class _SavedReportDetailScreenState extends State<SavedReportDetailScreen> {
         AgriProductService.getProductsForDisease(widget.report.diseaseName);
     final actionSteps =
         AgriProductService.getActionSteps(widget.report.diseaseName);
-    final nearbyKendras = AgriProductService.getNearbyKendras();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF3F7F0),
