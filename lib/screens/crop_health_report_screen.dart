@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../localization/app_localizations.dart';
@@ -23,6 +25,7 @@ class CropHealthReportScreen extends StatelessWidget {
     final reports = customReports ??
         (history.reports.isNotEmpty ? history.reports : ScanReport.mockHistory());
 
+    final primaryReport = reports.isNotEmpty ? reports.first : null;
     final userProfile = profile ?? UserProfile.defaultDemo();
 
     return Scaffold(
@@ -108,36 +111,64 @@ class CropHealthReportScreen extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text(
-                              '🌱 CaneCare AI™',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w900,
-                                color: Color(0xFF0F5132),
-                                letterSpacing: -0.3,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(5),
+                                    child: Image.asset(
+                                      'assets/images/cane_logo.png',
+                                      width: 22,
+                                      height: 22,
+                                      fit: BoxFit.contain,
+                                      errorBuilder: (_, __, ___) => const Icon(
+                                        Icons.eco_rounded,
+                                        size: 20,
+                                        color: Color(0xFF0F5132),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 7),
+                                  const Text(
+                                    'CaneCare AI™',
+                                    style: TextStyle(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w900,
+                                      color: Color(0xFF0F5132),
+                                      letterSpacing: -0.3,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                            Text(
-                              'SUGARCANE PATHOLOGY & AGRONOMY REPORT',
-                              style: TextStyle(
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF198754),
-                                letterSpacing: 0.4,
+                              const SizedBox(height: 2),
+                              const FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  'SUGARCANE PATHOLOGY & AGRONOMY REPORT',
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF198754),
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
+                        const SizedBox(width: 8),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: const [
                             Text(
                               'ID: CC-2025-0420-SR',
                               style: TextStyle(
-                                fontSize: 10.5,
+                                fontSize: 10,
                                 fontWeight: FontWeight.w800,
                                 color: Color(0xFF212529),
                               ),
@@ -145,7 +176,7 @@ class CropHealthReportScreen extends StatelessWidget {
                             Text(
                               'तारीख: २० एप्रिल २०२५',
                               style: TextStyle(
-                                fontSize: 10,
+                                fontSize: 9.5,
                                 color: Color(0xFF6C757D),
                               ),
                             ),
@@ -190,7 +221,7 @@ class CropHealthReportScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
 
-                    // 2. Primary AI Diagnosis Banner (Plantix Style)
+                    // 2. Primary AI Diagnosis Banner (Plantix Style with Real Photo)
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
@@ -201,16 +232,57 @@ class CropHealthReportScreen extends StatelessWidget {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            width: 60,
-                            height: 60,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFEE2E2),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: const Color(0xFFDC3545)),
-                            ),
-                            child: const Center(
-                              child: Text('🍃', style: TextStyle(fontSize: 26)),
+                          GestureDetector(
+                            onTap: () => _showImageDialog(context, primaryReport),
+                            child: Tooltip(
+                              message: 'मोठा फोटो पाहण्यासाठी टॅप करा',
+                              child: Container(
+                                width: 68,
+                                height: 68,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFEE2E2),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: const Color(0xFFDC3545),
+                                    width: 1.5,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFFDC3545).withValues(alpha: 0.15),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Stack(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(6.5),
+                                      child: SizedBox(
+                                        width: 68,
+                                        height: 68,
+                                        child: _buildDiseaseImage(primaryReport),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      right: 2,
+                                      bottom: 2,
+                                      child: Container(
+                                        padding: const EdgeInsets.all(2.5),
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withValues(alpha: 0.65),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.zoom_in,
+                                          size: 11,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -218,7 +290,10 @@ class CropHealthReportScreen extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
+                                Wrap(
+                                  spacing: 6,
+                                  runSpacing: 4,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
                                   children: [
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -235,7 +310,6 @@ class CropHealthReportScreen extends StatelessWidget {
                                         ),
                                       ),
                                     ),
-                                    const SizedBox(width: 6),
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
@@ -243,9 +317,11 @@ class CropHealthReportScreen extends StatelessWidget {
                                         borderRadius: BorderRadius.circular(3),
                                         border: Border.all(color: const Color(0xFFB6D4FE)),
                                       ),
-                                      child: const Text(
-                                        '✓ ९४.८% AI Match',
-                                        style: TextStyle(
+                                      child: Text(
+                                        primaryReport != null
+                                            ? '✓ ${primaryReport.confidenceDisplay} AI Match'
+                                            : '✓ ९४.८% AI Match',
+                                        style: const TextStyle(
                                           color: Color(0xFF0D6EFD),
                                           fontSize: 9,
                                           fontWeight: FontWeight.w800,
@@ -255,26 +331,30 @@ class CropHealthReportScreen extends StatelessWidget {
                                   ],
                                 ),
                                 const SizedBox(height: 4),
-                                const Text(
-                                  'उसावरील तांबडे कूज (Red Rot Disease)',
-                                  style: TextStyle(
+                                Text(
+                                  primaryReport != null && primaryReport.marathiName.isNotEmpty
+                                      ? primaryReport.marathiName
+                                      : (primaryReport?.diseaseName ?? 'उसावरील तांबडे कूज (Red Rot Disease)'),
+                                  style: const TextStyle(
                                     fontSize: 14.5,
                                     fontWeight: FontWeight.w900,
                                     color: Color(0xFF842029),
                                   ),
                                 ),
-                                const Text(
-                                  'पॅथॉलॉजी: Colletotrichum falcatum',
-                                  style: TextStyle(
+                                Text(
+                                  'पॅथॉलॉजी: ${primaryReport?.scientificName.isNotEmpty == true ? primaryReport!.scientificName : "Colletotrichum falcatum"}',
+                                  style: const TextStyle(
                                     fontSize: 10,
                                     fontStyle: FontStyle.italic,
                                     color: Color(0xFF6C757D),
                                   ),
                                 ),
                                 const SizedBox(height: 4),
-                                const Text(
-                                  '🔍 मुख्य लक्षणे: पानाच्या मध्य शिरेवर लालसर-तांबूस पट्टे व पांढरे ठिपके. उसाचा शेंडा पिवळा पडून वाळण्यास सुरुवात झाली आहे.',
-                                  style: TextStyle(
+                                Text(
+                                  primaryReport != null && primaryReport.symptoms.isNotEmpty
+                                      ? '🔍 मुख्य लक्षणे: ${primaryReport.symptoms.join(". ")}'
+                                      : '🔍 मुख्य लक्षणे: पानाच्या मध्य शिरेवर लालसर-तांबूस पट्टे व पांढरे ठिपके. उसाचा शेंडा पिवळा पडून वाळण्यास सुरुवात झाली आहे.',
+                                  style: const TextStyle(
                                     fontSize: 10.5,
                                     color: Color(0xFF2B2F32),
                                     height: 1.35,
@@ -420,25 +500,31 @@ class CropHealthReportScreen extends StatelessWidget {
                               textAlign: TextAlign.center,
                             ),
                           ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: const [
-                              Text(
-                                'डॉ. एस. बी. पाटील (Ph.D. Plant Pathology)',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                  color: Color(0xFF212529),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: const [
+                                Text(
+                                  'डॉ. एस. बी. पाटील (Ph.D. Plant Pathology)',
+                                  textAlign: TextAlign.end,
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: Color(0xFF212529),
+                                  ),
                                 ),
-                              ),
-                              Text(
-                                'वरिष्ठ कृषी शास्त्रज्ञ • KVK व CaneCare AI Panel',
-                                style: TextStyle(
-                                  fontSize: 9.5,
-                                  color: Color(0xFF6C757D),
+                                SizedBox(height: 2),
+                                Text(
+                                  'वरिष्ठ कृषी शास्त्रज्ञ • KVK व CaneCare AI Panel',
+                                  textAlign: TextAlign.end,
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    color: Color(0xFF6C757D),
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ],
                       ),
@@ -459,7 +545,10 @@ class CropHealthReportScreen extends StatelessWidget {
                         reports: reports,
                       ),
                       icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
-                      label: const Text('Download PDF'),
+                      label: const FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text('Download PDF'),
+                      ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF0F5132),
                         side: const BorderSide(color: Color(0xFF0F5132), width: 1.5),
@@ -480,7 +569,10 @@ class CropHealthReportScreen extends StatelessWidget {
                         language: loc.language,
                       ),
                       icon: const Icon(Icons.share_rounded, size: 18, color: Colors.white),
-                      label: const Text('Share Expert'),
+                      label: const FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text('Share Expert'),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF198754),
                         foregroundColor: Colors.white,
@@ -508,10 +600,14 @@ class CropHealthReportScreen extends StatelessWidget {
       children: [
         Text(
           label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: const TextStyle(fontSize: 9.5, color: Color(0xFF6C757D)),
         ),
         Text(
           value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: const TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w700,
@@ -572,6 +668,139 @@ class CropHealthReportScreen extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDiseaseImage(ScanReport? report) {
+    final imagePath = report?.imagePath;
+
+    if (imagePath != null && imagePath.isNotEmpty) {
+      if (imagePath.startsWith('assets/')) {
+        return Image.asset(
+          imagePath,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _diseaseAssetFallback(report),
+        );
+      }
+      if (imagePath.startsWith('http') ||
+          imagePath.startsWith('blob:') ||
+          imagePath.startsWith('data:')) {
+        return Image.network(
+          imagePath,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _diseaseAssetFallback(report),
+        );
+      }
+      if (!kIsWeb) {
+        try {
+          final file = File(imagePath);
+          if (file.existsSync()) {
+            return Image.file(
+              file,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => _diseaseAssetFallback(report),
+            );
+          }
+        } catch (_) {}
+      }
+    }
+
+    return _diseaseAssetFallback(report);
+  }
+
+  Widget _diseaseAssetFallback(ScanReport? report) {
+    String asset = 'assets/images/disease_red_rot.png';
+    if (report != null) {
+      final key = '${report.diseaseName} ${report.marathiName}'.toLowerCase();
+      if (key.contains('yellow') || key.contains('पिवळा')) {
+        asset = 'assets/images/disease_yellow_leaf.png';
+      } else if (key.contains('rust') || key.contains('तांबेरा')) {
+        asset = 'assets/images/disease_rust.png';
+      } else if (key.contains('smut') || key.contains('काजळी')) {
+        asset = 'assets/images/disease_smut.png';
+      } else if (key.contains('mosaic') || key.contains('मोझॅक')) {
+        asset = 'assets/images/disease_mosaic.png';
+      } else if (key.contains('healthy') || key.contains('निरोगी')) {
+        asset = 'assets/images/disease_healthy.png';
+      }
+    }
+
+    return Image.asset(
+      asset,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => Image.asset(
+        'assets/images/detail_red_rot_banner.png',
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => Container(
+          color: const Color(0xFFFEE2E2),
+          child: const Center(
+            child: Icon(Icons.eco_rounded, size: 28, color: Color(0xFFDC3545)),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showImageDialog(BuildContext context, ScanReport? report) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(16),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black26,
+                blurRadius: 16,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 320),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: _buildDiseaseImage(report),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        report?.marathiName.isNotEmpty == true
+                            ? report!.marathiName
+                            : (report?.diseaseName ?? 'उसावरील तांबडे कूज (Red Rot)'),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, size: 20),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

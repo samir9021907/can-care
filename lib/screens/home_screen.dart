@@ -16,6 +16,7 @@ import 'sugarcane_advisory_screen.dart';
 import 'weather_screen.dart';
 import 'sugarcane_care_guide_screen.dart';
 import 'farmer_community_screen.dart';
+import '../services/notification_service.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback onNavigateToScan;
@@ -49,6 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    NotificationService().init();
     _loadLiveWeather();
     _loadCompletedTasks();
   }
@@ -536,54 +538,72 @@ class _HomeScreenState extends State<HomeScreen> {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Bell Button with Red Dot
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const NotificationsScreen(),
+            // Bell Button with Dynamic Notification Count Badge
+            ListenableBuilder(
+              listenable: NotificationService(),
+              builder: (context, _) {
+                final unread = NotificationService().unreadCount;
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const NotificationsScreen(),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFFE2EBE2), width: 1.2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.03),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        const Icon(
+                          Icons.notifications_none_rounded,
+                          color: Color(0xFF14451D),
+                          size: 22,
+                        ),
+                        if (unread > 0)
+                          Positioned(
+                            top: 6,
+                            right: 6,
+                            child: Container(
+                              padding: const EdgeInsets.all(3),
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFEF4444),
+                                shape: BoxShape.circle,
+                              ),
+                              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+                              child: Center(
+                                child: Text(
+                                  unread > 9 ? '9+' : '$unread',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w800,
+                                    height: 1,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 );
               },
-              child: Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFE2EBE2), width: 1.2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.03),
-                      blurRadius: 4,
-                      offset: const Offset(0, 1),
-                    ),
-                  ],
-                ),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    const Icon(
-                      Icons.notifications_none_rounded,
-                      color: Color(0xFF14451D),
-                      size: 22,
-                    ),
-                    Positioned(
-                      top: 10,
-                      right: 11,
-                      child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFEF4444),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ),
             const SizedBox(width: 10),
 

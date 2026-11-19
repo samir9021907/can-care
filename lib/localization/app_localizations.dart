@@ -17,6 +17,10 @@ class AppLocalizations {
 
   AppLocalizations(this.language);
 
+  bool get isMarathi => language == AppLanguage.marathi;
+  bool get isHindi => language == AppLanguage.hindi;
+  bool get isEnglish => language == AppLanguage.english;
+
   static AppLocalizations of(BuildContext context) {
     return Localizations.of<AppLocalizations>(context, AppLocalizations) ??
         AppLocalizations(AppLanguage.english);

@@ -7,11 +7,13 @@ import '../models/recommended_product.dart';
 import '../models/scan_report.dart';
 import '../providers/history_provider.dart';
 import '../services/agri_product_service.dart';
+import '../services/report_html_service.dart';
 import '../widgets/severity_badge.dart';
 import '../widgets/confirm_dialog.dart';
 import '../widgets/app_snackbar.dart';
 import '../widgets/nearby_krishi_kendras_widget.dart';
 import 'ask_question_screen.dart';
+import 'crop_health_report_screen.dart';
 import 'disease_detail_screen.dart';
 import 'product_detail_screen.dart';
 
@@ -52,9 +54,10 @@ class _SavedReportDetailScreenState extends State<SavedReportDetailScreen> {
 
   void _handleExport(BuildContext context) {
     final loc = AppLocalizations.of(context);
-    AppSnackBar.showSuccess(
-      context,
-      '${widget.report.getLocalizedName(loc.language)} - summary ready to share.',
+    ReportHtmlService.shareViaWhatsApp(
+      context: context,
+      reports: [widget.report],
+      language: loc.language,
     );
   }
 
@@ -103,6 +106,20 @@ class _SavedReportDetailScreenState extends State<SavedReportDetailScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf_outlined, color: Color(0xFF14451D)),
+            tooltip: 'पीक आरोग्य अहवाल (Print / PDF Slip)',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => CropHealthReportScreen(
+                    customReports: [widget.report],
+                  ),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.share_outlined, color: Color(0xFF14451D)),
             tooltip: 'Share Report',

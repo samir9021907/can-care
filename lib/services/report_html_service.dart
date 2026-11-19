@@ -74,7 +74,8 @@ class ReportHtmlService {
       display: flex; border: 1px solid #f5c2c7; background: #fff8f8; border-radius: 6px;
       padding: 10px 12px; margin-bottom: 10px; gap: 14px; align-items: center;
     }
-    .diag-photo { width: 70px; height: 70px; border-radius: 6px; border: 1.5px solid #dc3545; background: #fee2e2; display: flex; align-items: center; justify-content: center; font-size: 26px; flex-shrink: 0; }
+    .diag-photo { width: 70px; height: 70px; border-radius: 6px; border: 1.5px solid #dc3545; background: #fee2e2; display: flex; align-items: center; justify-content: center; font-size: 26px; flex-shrink: 0; overflow: hidden; }
+    .diag-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
     .badge-danger { background: #dc3545; color: #fff; font-size: 9.5px; font-weight: 800; padding: 2px 8px; border-radius: 3px; }
     .badge-conf { background: #e7f1ff; color: #0d6efd; font-size: 9.5px; font-weight: 800; padding: 2px 7px; border-radius: 3px; border: 1px solid #b6d4fe; }
     .diag-name { font-size: 15px; font-weight: 900; color: #842029; }
@@ -99,7 +100,10 @@ class ReportHtmlService {
 </head>
 <body>
   <div class="action-bar no-print">
-    <div style="font-weight: 800; color: var(--primary);">🌱 CaneCare AI • लाईव्ह कृषी रिपोर्ट (Market Standard 1-Page PDF)</div>
+    <div style="font-weight: 800; color: var(--primary); display:flex; align-items:center; gap:6px;">
+      <img src="assets/images/cane_logo.png" alt="Logo" style="width:20px; height:20px; object-fit:contain;" onerror="this.style.display='none'" />
+      <span>CaneCare AI • लाईव्ह कृषी रिपोर्ट (Market Standard 1-Page PDF)</span>
+    </div>
     <div style="display: flex; gap: 8px;">
       <button class="btn btn-print" onclick="window.print()">🖨️ प्रिंट / PDF सेव्ह करा</button>
       <button class="btn btn-wa" onclick="shareWhatsApp()">💬 WhatsApp वर पाठवा</button>
@@ -110,7 +114,10 @@ class ReportHtmlService {
     <table class="header-table">
       <tr>
         <td style="vertical-align: top;">
-          <div class="brand-title">🌱 CaneCare AI™</div>
+          <div class="brand-title" style="display:flex; align-items:center; gap:8px;">
+            <img src="assets/images/cane_logo.png" alt="Logo" style="width:24px; height:24px; object-fit:contain;" onerror="this.style.display='none'" />
+            <span>CaneCare AI™</span>
+          </div>
           <div class="brand-sub">Sugarcane Pathology & Agronomy Advisory Report</div>
         </td>
         <td class="header-meta" style="vertical-align: top;">
@@ -135,7 +142,9 @@ class ReportHtmlService {
     </div>
 
     <div class="diag-banner">
-      <div class="diag-photo">🍃</div>
+      <div class="diag-photo">
+        <img src="assets/images/disease_red_rot.png" alt="Crop Leaf Sample" onerror="this.onerror=null; this.parentElement.innerText='🍃';" />
+      </div>
       <div class="diag-info">
         <div style="display: flex; gap: 8px; margin-bottom: 3px;">
           <span class="badge-danger">गंभीर धोका (High Risk)</span>
@@ -274,11 +283,26 @@ class ReportHtmlService {
     final now = DateTime.now();
     final dateStr = DateFormat('dd/MM/yyyy').format(now);
 
+    final primary = reports?.isNotEmpty == true ? reports!.first : null;
+    final diseaseName = primary?.marathiName.isNotEmpty == true
+        ? primary!.marathiName
+        : (primary?.diseaseName ?? 'उसावरील तांबडे कूज (Red Rot)');
+    final confidence = primary?.confidenceDisplay ?? '९४.८%';
+    final severityStr = primary?.isHealthy == true
+        ? 'निरोगी (Healthy)'
+        : (primary?.severity == DiseaseSeverity.high ||
+                primary?.severity == DiseaseSeverity.critical
+            ? 'High Risk (गंभीर धोका)'
+            : 'Moderate (मध्यम धोका)');
+    final plotNote = primary?.fieldNotes.isNotEmpty == true
+        ? primary!.fieldNotes
+        : 'Plot #3 (North Field)';
+
     return '🌾 *CaneCare AI™ - ऊस पीक निदान व फवारणी अहवाल* ($dateStr)\n\n'
         '👤 *शेतकरी:* $farmerName ($location)\n'
         '🌱 *पीक व जात:* ऊस $variety • $farmSize (५ महिने)\n'
-        '⚠️ *निदान:* उसावरील तांबडे कूज (Red Rot) - *High Risk (९४.८% Match)*\n'
-        '📍 *बाधित वावर:* Plot #3 (North Field)\n\n'
+        '⚠️ *निदान:* $diseaseName - *$severityStr ($confidence Match)*\n'
+        '📍 *बाधित वावर:* $plotNote\n\n'
         '℞ *कृषी तज्ज्ञ फवारणी शिफारस (फेरी १ - २४ तासांत):*\n'
         '१. कार्बेन्डाझिम १२% + मँकोझेब ६३% (SAFF) @ २ ग्रॅम/लिटर पाणी (५०० ग्रॅम/एकर)\n'
         '२. ॲसिटामिप्रिड २०% SP @ ०.५ ग्रॅम/लिटर पाणी (मावा कीड नियंत्रण)\n'
@@ -307,23 +331,72 @@ class ReportHtmlService {
     );
 
     final cleanPhone = phoneNumber?.replaceAll(RegExp(r'[^0-9]'), '') ?? '';
-    final String urlStr;
-    if (cleanPhone.isNotEmpty) {
-      urlStr = 'https://api.whatsapp.com/send?phone=$cleanPhone&text=${Uri.encodeComponent(text)}';
-    } else {
-      urlStr = 'https://api.whatsapp.com/send?text=${Uri.encodeComponent(text)}';
-    }
+    final encodedText = Uri.encodeComponent(text);
 
-    final uri = Uri.parse(urlStr);
-    try {
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-        return true;
+    // 1. WhatsApp Native Scheme (opens installed WhatsApp app on Android/iOS directly)
+    final nativeUrl = cleanPhone.isNotEmpty
+        ? 'whatsapp://send?phone=$cleanPhone&text=$encodedText'
+        : 'whatsapp://send?text=$encodedText';
+    final nativeUri = Uri.parse(nativeUrl);
+
+    // 2. WhatsApp wa.me universal URL (standard for mobile, web, and desktop)
+    final waMeUrl = cleanPhone.isNotEmpty
+        ? 'https://wa.me/$cleanPhone?text=$encodedText'
+        : 'https://wa.me/?text=$encodedText';
+    final waMeUri = Uri.parse(waMeUrl);
+
+    // 3. WhatsApp Web API URL (robust web fallback)
+    final apiUrl = cleanPhone.isNotEmpty
+        ? 'https://api.whatsapp.com/send?phone=$cleanPhone&text=$encodedText'
+        : 'https://api.whatsapp.com/send?text=$encodedText';
+    final apiUri = Uri.parse(apiUrl);
+
+    bool launched = false;
+
+    // A. If on mobile (Android/iOS), try the direct native WhatsApp scheme first
+    if (!kIsWeb) {
+      try {
+        launched = await launchUrl(
+          nativeUri,
+          mode: LaunchMode.externalNonBrowserApplication,
+        );
+      } catch (e) {
+        debugPrint('WhatsApp native scheme failed: $e');
+        launched = false;
       }
-    } catch (e) {
-      debugPrint('WhatsApp launch error: $e');
     }
 
+    // B. If native app didn't launch or on Web/Desktop, launch wa.me universal link
+    if (!launched) {
+      try {
+        launched = await launchUrl(
+          waMeUri,
+          mode: LaunchMode.externalApplication,
+        );
+      } catch (e) {
+        debugPrint('WhatsApp wa.me link failed: $e');
+        launched = false;
+      }
+    }
+
+    // C. Fallback to api.whatsapp.com
+    if (!launched) {
+      try {
+        launched = await launchUrl(
+          apiUri,
+          mode: LaunchMode.externalApplication,
+        );
+      } catch (e) {
+        debugPrint('WhatsApp api link failed: $e');
+        launched = false;
+      }
+    }
+
+    if (launched) {
+      return true;
+    }
+
+    // Fallback: copy to clipboard and notify user
     await Clipboard.setData(ClipboardData(text: text));
     if (context != null && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

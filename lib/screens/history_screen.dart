@@ -8,7 +8,12 @@ import '../widgets/history_card.dart';
 import '../widgets/empty_state_view.dart';
 import '../widgets/error_state_view.dart';
 import '../widgets/top_notification.dart';
+import '../models/app_notification.dart';
+import '../services/notification_service.dart';
+import '../services/report_html_service.dart';
+import 'crop_health_report_screen.dart';
 import 'disease_detail_screen.dart';
+import 'scan_camera_screen.dart';
 
 class _WeeklyHealthBucket {
   final int weekNumber; // 1, 2, 3, 4
@@ -46,12 +51,12 @@ class _WeeklyHealthBucket {
 }
 
 class HistoryScreen extends StatefulWidget {
-  final VoidCallback onNavigateToScan;
+  final VoidCallback? onNavigateToScan;
   final VoidCallback? onNavigateBack;
 
   const HistoryScreen({
     super.key,
-    required this.onNavigateToScan,
+    this.onNavigateToScan,
     this.onNavigateBack,
   });
 
@@ -420,22 +425,29 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   void _downloadPdfReport(BuildContext context) {
-    TopNotification.showDownload(
+    final history = context.read<HistoryProvider>();
+    final reports =
+        history.reports.isNotEmpty ? history.reports : ScanReport.mockHistory();
+    Navigator.push(
       context,
-      fileName: 'Sugarcane_Health_Report_April.pdf',
-      fileSize: '2.4 MB',
-      onOpen: () => _showReportsSummaryModal(context),
+      MaterialPageRoute(
+        builder: (_) => CropHealthReportScreen(
+          customReports: reports,
+        ),
+      ),
     );
   }
 
   void _shareWithExpert(BuildContext context) {
-    TopNotification.showShare(
-      context,
-      title: 'कृषी तज्ज्ञांसाठी अहवाल तयार!',
-      subtitle: 'शेअर लिंक क्लिपबोर्डवर कॉपी झाली',
-      onTap: () => _showShareOptionsSheet(context),
+    final history = context.read<HistoryProvider>();
+    final loc = AppLocalizations.of(context);
+    final reports =
+        history.reports.isNotEmpty ? history.reports : ScanReport.mockHistory();
+    ReportHtmlService.shareViaWhatsApp(
+      context: context,
+      reports: reports,
+      language: loc.language,
     );
-    _showShareOptionsSheet(context);
   }
 
   void _showShareOptionsSheet(BuildContext context) {
@@ -494,11 +506,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     style: TextStyle(fontSize: 11)),
                 onTap: () {
                   Navigator.pop(ctx);
-                  TopNotification.show(
-                    context,
-                    title: 'WhatsApp वर शेअर केले',
-                    subtitle: 'अहवाल कृषी अधिकाऱ्यांच्या चॅटवर पाठवला गेला आहे.',
-                    icon: Icons.check_circle_rounded,
+                  final history = context.read<HistoryProvider>();
+                  final loc = AppLocalizations.of(context);
+                  final reports = history.reports.isNotEmpty
+                      ? history.reports
+                      : ScanReport.mockHistory();
+                  ReportHtmlService.shareViaWhatsApp(
+                    context: context,
+                    reports: reports,
+                    language: loc.language,
                   );
                 },
               ),
@@ -558,6 +574,25 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   void _setFollowUpReminder(BuildContext context) {
+    NotificationService().addNotification(
+      AppNotification(
+        id: 'reminder_${DateTime.now().millisecondsSinceEpoch}',
+        title: 'Follow-up Check: Yellow Leaf Plot #2',
+        titleMarathi: '⏰ पिवळा पान रोग फेरतपासणी (Plot #2)',
+        titleHindi: '⏰ पीली पत्ती रोग पुनः जांच (Plot #2)',
+        body: 'Recheck treatment progress for Yellow Leaf Disease in Plot #2 today.',
+        bodyMarathi: 'Plot #2 मधील पिवळा पान रोगाची फवारणी प्रगती तपासण्यासाठी आज नवीन स्कॅन करा.',
+        bodyHindi: 'Plot #2 में पीली पत्ती रोग की सुधार प्रगति जांचने के लिए आज पुनः स्कैन करें।',
+        category: NotificationCategory.reminder,
+        importance: NotificationImportance.normal,
+        timestamp: DateTime.now(),
+        isRead: false,
+        actionRoute: 'scan',
+        actionLabel: 'Scan Now',
+        actionLabelMarathi: 'आता स्कॅन करा',
+      ),
+    );
+
     TopNotification.showReminder(
       context,
       title: 'फॉलो-अप रिमाइंडर सेट केला!',
@@ -919,7 +954,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   title: loc.translate('no_history'),
                   message: loc.translate('no_history_desc'),
                   buttonText: loc.translate('scan_first_leaf'),
-                  onButtonPressed: widget.onNavigateToScan,
+                  onButtonPressed: widget.onNavigateToScan ??
+                      () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ScanCameraScreen(),
+                            ),
+                          ),
                 ),
               ] else ...[
                 // Render the first 4 recent scans matching Image 2
