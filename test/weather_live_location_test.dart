@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:canecare/screens/weather_screen.dart';
 import 'package:canecare/services/live_weather_service.dart';
+import 'package:canecare/services/agri_product_service.dart';
 import 'package:canecare/localization/app_localizations.dart';
 
 import 'package:provider/provider.dart';
@@ -111,6 +112,30 @@ void main() {
 
       // Verify selected location updated to Sangamner
       expect(find.text('संगमनेर, अहिल्यानगर'), findsOneWidget);
+    });
+
+    test('reverseGeocode accurately identifies closest cluster', () async {
+      final service = LiveWeatherService.instance;
+      // Coordinates right in Shirdi
+      final shirdiPlace = await service.reverseGeocode(19.7667, 74.4764, langCode: 'mr');
+      expect(shirdiPlace.contains('शिर्डी') || shirdiPlace.contains('अहिल्यानगर'), isTrue);
+
+      // Coordinates right in Kopargaon
+      final kopargaonPlace = await service.reverseGeocode(19.8875, 74.4789, langCode: 'mr');
+      expect(kopargaonPlace.contains('कोपरगाव') || kopargaonPlace.contains('अहिल्यानगर'), isTrue);
+    });
+
+    test('AgriProductService returns valid user location with Kendras', () async {
+      final loc = await AgriProductService.getCurrentUserLocation();
+      expect(loc.latitude, isNotNull);
+      expect(loc.longitude, isNotNull);
+      expect(loc.locationName.isNotEmpty, isTrue);
+
+      final kendras = AgriProductService.getKendrasNearLocation(
+        latitude: loc.latitude,
+        longitude: loc.longitude,
+      );
+      expect(kendras.isNotEmpty, isTrue);
     });
   });
 }

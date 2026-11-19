@@ -20,6 +20,7 @@ abstract class PredictionService {
   Stream<String> get analysisProgressStream;
   Future<PredictionResult> predictDisease({
     required String imagePath,
+    Uint8List? imageBytes,
     DemoPredictionFailure failureMode = DemoPredictionFailure.none,
     String? preferredDiseaseId,
   });
@@ -47,6 +48,7 @@ class RemotePredictionService implements PredictionService {
   @override
   Future<PredictionResult> predictDisease({
     required String imagePath,
+    Uint8List? imageBytes,
     DemoPredictionFailure failureMode = DemoPredictionFailure.none,
     String? preferredDiseaseId,
   }) async {
@@ -154,6 +156,7 @@ class RemotePredictionService implements PredictionService {
       debugPrint('Remote prediction failed: $e, using local demo fallback');
       return _fallbackService.predictDisease(
         imagePath: imagePath,
+        imageBytes: imageBytes,
         failureMode: failureMode,
         preferredDiseaseId: preferredDiseaseId,
       );
@@ -177,6 +180,7 @@ class DemoPredictionService implements PredictionService {
   @override
   Future<PredictionResult> predictDisease({
     required String imagePath,
+    Uint8List? imageBytes,
     DemoPredictionFailure failureMode = DemoPredictionFailure.none,
     String? preferredDiseaseId,
   }) async {

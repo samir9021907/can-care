@@ -893,6 +893,11 @@ class AppLocalizations {
       AppLanguage.marathi: 'जतन अहवाल',
       AppLanguage.hindi: 'सहेजी गई रिपोर्ट',
     },
+    'profile_saved_posts': {
+      AppLanguage.english: 'Saved Community Posts',
+      AppLanguage.marathi: 'सेव्ह केलेल्या चर्चा व पोस्ट',
+      AppLanguage.hindi: 'सहेजी गई समुदाय चर्चा',
+    },
     'profile_help': {
       AppLanguage.english: 'Help & Support',
       AppLanguage.marathi: 'मदत आणि सहाय्य',

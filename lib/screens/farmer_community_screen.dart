@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../localization/app_localizations.dart';
 import 'notifications_screen.dart';
 
@@ -6,7 +6,8 @@ import 'notifications_screen.dart';
 /// A premium, farmer-friendly discussion and knowledge exchange platform
 /// designed for sugarcane farmers in Maharashtra, India with full trilingual support.
 class FarmerCommunityScreen extends StatefulWidget {
-  const FarmerCommunityScreen({super.key});
+  final String? initialCategoryId;
+  const FarmerCommunityScreen({super.key, this.initialCategoryId});
 
   @override
   State<FarmerCommunityScreen> createState() => _FarmerCommunityScreenState();
@@ -65,6 +66,9 @@ class _FarmerCommunityScreenState extends State<FarmerCommunityScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialCategoryId != null) {
+      _selectedCategoryId = widget.initialCategoryId!;
+    }
     _posts = _getInitialPosts();
     _searchController.addListener(() {
       setState(() {

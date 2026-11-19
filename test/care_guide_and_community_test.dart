@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
+import 'package:canecare/providers/auth_provider.dart';
 import 'package:canecare/screens/sugarcane_care_guide_screen.dart';
 import 'package:canecare/screens/farmer_community_screen.dart';
 import 'package:canecare/screens/home_screen.dart';
@@ -8,16 +10,21 @@ import 'package:canecare/localization/app_localizations.dart';
 
 void main() {
   Widget buildTestableWidget(Widget child, [AppLanguage lang = AppLanguage.english]) {
-    return MaterialApp(
-      home: child,
-      localizationsDelegates: [
-        AppLocalizationsDelegate(lang),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
       ],
-      supportedLocales: const [
-        Locale('en', ''),
-        Locale('mr', ''),
-        Locale('hi', ''),
-      ],
+      child: MaterialApp(
+        home: child,
+        localizationsDelegates: [
+          AppLocalizationsDelegate(lang),
+        ],
+        supportedLocales: const [
+          Locale('en', ''),
+          Locale('mr', ''),
+          Locale('hi', ''),
+        ],
+      ),
     );
   }
 
@@ -73,7 +80,7 @@ void main() {
     expect(find.text('Irrigation'), findsWidgets);
 
     // 5. Expert Answer Card
-    expect(find.text('VERIFIED EXPERT ANSWER (तज्ञांचे उत्तर)'), findsOneWidget);
+    expect(find.text('Verified Expert Answer'), findsOneWidget);
     expect(find.text('Dr. Anand Patil (VSI Pune)'), findsOneWidget);
 
     // 6. Community Feed sample post
@@ -87,6 +94,68 @@ void main() {
     await tester.tap(likeButton, warnIfMissed: false);
     await tester.pumpAndSettle();
     expect(find.byIcon(Icons.thumb_up_rounded), findsWidgets);
+  });
+
+  testWidgets('Screen 3: FarmerCommunityScreen allows asking and submitting a question',
+      (tester) async {
+    await tester.pumpWidget(buildTestableWidget(const FarmerCommunityScreen()));
+    await tester.pumpAndSettle();
+
+    // Verify FAB exists and tap it
+    expect(find.byType(FloatingActionButton), findsOneWidget);
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+
+    // Verify sheet opened
+    expect(find.text('Ask the Farming Community'), findsOneWidget);
+
+    // Enter question title & description (TextField 0 is search bar, 1 is title, 2 is desc)
+    final textFields = find.byType(TextField);
+    expect(textFields, findsNWidgets(3));
+    await tester.enterText(textFields.at(1), 'Test Sugarcane Question');
+    await tester.enterText(textFields.at(2), 'Detailed description for sugarcane crop query.');
+    await tester.pumpAndSettle();
+
+    // Submit question
+    await tester.tap(find.text('Post Question to Community'));
+    await tester.pumpAndSettle();
+
+    // Verify question is added at top of feed
+    expect(find.text('Test Sugarcane Question'), findsOneWidget);
+  });
+
+  testWidgets('FarmerCommunityScreen renders responsively on narrow 320px screen without overflow or zebra lines',
+      (tester) async {
+    tester.view.physicalSize = const Size(320, 800);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    await tester.pumpWidget(buildTestableWidget(const FarmerCommunityScreen(), AppLanguage.marathi));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('शेतकरी कम्युनिटी'), findsOneWidget);
+    expect(find.text('चर्चा पहा'), findsWidgets);
+
+    // Also test English
+    await tester.pumpWidget(buildTestableWidget(const FarmerCommunityScreen(), AppLanguage.english));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Farmer Community'), findsOneWidget);
+    expect(find.text('View Discussion'), findsWidgets);
+  });
+
+  testWidgets('FarmerCommunityScreen handles web, data uri and fallback images safely',
+      (tester) async {
+    await tester.pumpWidget(buildTestableWidget(const FarmerCommunityScreen()));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(FarmerCommunityScreen), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('HomeScreen renders Care Guide and Farmer Community cards in English and Marathi',

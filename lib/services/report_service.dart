@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import '../constants/api_constants.dart';
-import '../models/disease_info.dart';
 import '../models/scan_report.dart';
 import 'api_client.dart';
 

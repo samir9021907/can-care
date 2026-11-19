@@ -37,8 +37,8 @@ void main() {
     await tester.pumpWidget(createTestApp(const CreateAccountScreen()));
 
     expect(find.text('Create an account'), findsOneWidget);
-    expect(find.text('Enter your email to sign up for this app'), findsOneWidget);
-    expect(find.text('Continue'), findsOneWidget);
+    expect(find.text('Create Account'), findsOneWidget);
+    expect(find.text('Join CaneCare AI to protect and monitor your sugarcane crop.'), findsOneWidget);
     expect(find.text('Continue with Google'), findsOneWidget);
     expect(find.text('Continue with Apple'), findsOneWidget);
     expect(find.text('Terms of Service'), findsOneWidget);
@@ -51,7 +51,7 @@ void main() {
     await tester.pumpWidget(createTestApp(const SignInScreen()));
 
     expect(find.text('Sign In'), findsNWidgets(2)); // Heading & Button
-    expect(find.text('Welcome back! Please sign in to continue.'), findsOneWidget);
+    expect(find.text('Welcome back! Enter your email or mobile number to continue.'), findsOneWidget);
     expect(find.text('Forgot password?'), findsOneWidget);
     expect(find.text('Continue with Google'), findsOneWidget);
     expect(find.text('Continue with Apple'), findsOneWidget);

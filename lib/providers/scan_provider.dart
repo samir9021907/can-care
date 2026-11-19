@@ -223,6 +223,7 @@ class ScanProvider extends ChangeNotifier {
     try {
       final result = await _predictionService.predictDisease(
         imagePath: _imagePath!,
+        imageBytes: _imageBytes,
         failureMode: _simulatedFailure,
         preferredDiseaseId: _selectedSimulationDiseaseId,
       );

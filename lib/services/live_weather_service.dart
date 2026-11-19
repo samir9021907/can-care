@@ -334,66 +334,127 @@ class LiveWeatherService implements WeatherService {
     return nearest;
   }
 
-  /// Live GPS detection: requests permission and acquires current location
-  /// Uses device GPS first with fast fallback to lastKnownPosition and IP geolocation
+  /// Live GPS detection: requests permission and acquires accurate current location.
+  /// 1. Tries high/medium accuracy device GPS directly.
+  /// 2. If hardware GPS fix is slow, falls back to getLastKnownPosition.
+  /// 3. If GPS is unavailable/disabled (e.g. laptop/emulator/indoors), falls back to HTTPS IP Geolocation.
   Future<Map<String, dynamic>?> detectLiveGpsLocation({
     String langCode = 'mr',
   }) async {
     double? latitude;
     double? longitude;
+    bool isTrueHardwareGps = false;
+    String? locationError;
 
-    // 1. Try device GPS / Location Manager
+    // 1. Check device location service and permissions
     try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (serviceEnabled) {
-        LocationPermission permission = await Geolocator.checkPermission();
-        if (permission == LocationPermission.denied) {
-          permission = await Geolocator.requestPermission();
-        }
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        locationError = 'SERVICE_DISABLED';
+      }
 
-        if (permission == LocationPermission.whileInUse ||
-            permission == LocationPermission.always) {
-          // Check last known position first for instant response
-          final lastKnown = await Geolocator.getLastKnownPosition();
-          if (lastKnown != null) {
-            latitude = lastKnown.latitude;
-            longitude = lastKnown.longitude;
-          } else {
-            // Fast low-accuracy cell tower/wifi location (max 4 seconds)
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        locationError = 'PERMISSION_DENIED_FOREVER';
+      }
+
+      if (permission == LocationPermission.whileInUse ||
+          permission == LocationPermission.always) {
+        // Step 1A: Attempt FRESH real-time GPS position first (High accuracy, 8s)
+        try {
+          final position = await Geolocator.getCurrentPosition(
+            locationSettings: const LocationSettings(
+              accuracy: LocationAccuracy.high,
+              timeLimit: Duration(seconds: 8),
+            ),
+          );
+          latitude = position.latitude;
+          longitude = position.longitude;
+          isTrueHardwareGps = true;
+        } catch (_) {
+          // Step 1B: If high accuracy timed out (e.g. indoors or weak satellites),
+          // try medium accuracy with 4 seconds
+          try {
             final position = await Geolocator.getCurrentPosition(
               locationSettings: const LocationSettings(
-                accuracy: LocationAccuracy.low,
+                accuracy: LocationAccuracy.medium,
                 timeLimit: Duration(seconds: 4),
               ),
             );
             latitude = position.latitude;
             longitude = position.longitude;
+            isTrueHardwareGps = true;
+          } catch (_) {
+            // Step 1C: Fallback to last known position from device
+            try {
+              final lastKnown = await Geolocator.getLastKnownPosition();
+              if (lastKnown != null) {
+                latitude = lastKnown.latitude;
+                longitude = lastKnown.longitude;
+                isTrueHardwareGps = true;
+              }
+            } catch (_) {}
           }
         }
       }
-    } catch (_) {
-      // GPS hardware timeout or disabled
+    } catch (e) {
+      debugPrint('LiveWeatherService GPS detection note: $e');
     }
 
-    // 2. If GPS failed, disabled, or timed out, use IP Geolocation (instant & highly accurate for city/town)
+    // 2. If device GPS failed, disabled, or timed out, use multi-source HTTPS IP Geolocation
     if (latitude == null || longitude == null) {
+      // Source A: ipwho.is (fast, HTTPS, free)
       try {
-        final ipUri = Uri.parse('http://ip-api.com/json');
-        final ipRes = await http.get(ipUri).timeout(const Duration(seconds: 4));
-        if (ipRes.statusCode == 200) {
-          final ipData = jsonDecode(ipRes.body) as Map<String, dynamic>;
-          if (ipData['status'] == 'success') {
-            latitude = (ipData['lat'] as num).toDouble();
-            longitude = (ipData['lon'] as num).toDouble();
+        final uri = Uri.parse('https://ipwho.is/');
+        final res = await http.get(uri).timeout(const Duration(seconds: 5));
+        if (res.statusCode == 200) {
+          final data = jsonDecode(res.body) as Map<String, dynamic>;
+          if (data['success'] == true &&
+              data['latitude'] != null &&
+              data['longitude'] != null) {
+            latitude = (data['latitude'] as num).toDouble();
+            longitude = (data['longitude'] as num).toDouble();
           }
         }
-      } catch (_) {
-        // IP geolocation fallback
+      } catch (_) {}
+
+      // Source B: freeipapi.com (HTTPS)
+      if (latitude == null || longitude == null) {
+        try {
+          final uri = Uri.parse('https://freeipapi.com/api/json');
+          final res = await http.get(uri).timeout(const Duration(seconds: 5));
+          if (res.statusCode == 200) {
+            final data = jsonDecode(res.body) as Map<String, dynamic>;
+            if (data['latitude'] != null && data['longitude'] != null) {
+              latitude = (data['latitude'] as num).toDouble();
+              longitude = (data['longitude'] as num).toDouble();
+            }
+          }
+        } catch (_) {}
+      }
+
+      // Source C: ipapi.co (HTTPS)
+      if (latitude == null || longitude == null) {
+        try {
+          final uri = Uri.parse('https://ipapi.co/json/');
+          final res = await http.get(uri).timeout(const Duration(seconds: 5));
+          if (res.statusCode == 200) {
+            final data = jsonDecode(res.body) as Map<String, dynamic>;
+            if (data['latitude'] != null && data['longitude'] != null) {
+              latitude = (data['latitude'] as num).toDouble();
+              longitude = (data['longitude'] as num).toDouble();
+            }
+          }
+        } catch (_) {}
       }
     }
 
     if (latitude == null || longitude == null) {
-      return null;
+      return locationError != null ? {'error': locationError} : null;
     }
 
     // Reverse geocode coordinates to friendly place name
@@ -404,11 +465,27 @@ class LiveWeatherService implements WeatherService {
       'longitude': longitude,
       'placeName': placeName,
       'isLiveGps': true,
+      'isHardwareGps': isTrueHardwareGps,
     };
   }
 
   /// Reverse geocoding using OpenStreetMap Nominatim with local proximity fallback
   Future<String> reverseGeocode(double lat, double lon, {String langCode = 'mr'}) async {
+    // --- Step 1: Distance-based cluster match ---
+    // These known clusters guarantee the right district even when Nominatim
+    // returns "Nashik Division" for Ahilyanagar sugar belt villages.
+    final distBahadurpur = _km(lat, lon, 19.7420, 74.5180);
+    final distShirdi     = _km(lat, lon, 19.7667, 74.4764);
+    final distRahata     = _km(lat, lon, 19.6890, 74.4925);
+    final distKopargaon  = _km(lat, lon, 19.8875, 74.4789);
+    final distShrirampur = _km(lat, lon, 19.6190, 74.6560);
+    final distSangamner  = _km(lat, lon, 19.5761, 74.2070);
+    final distSinnar     = _km(lat, lon, 19.8450, 73.9980);
+    final distNashik     = _km(lat, lon, 19.9975, 73.7898);
+    final distNagar      = _km(lat, lon, 19.0948, 74.7480);
+
+    // --- Step 2: Try Nominatim to get local village/town name ---
+    String? villageName;
     try {
       final uri = Uri.parse(
         'https://nominatim.openstreetmap.org/reverse?lat=$lat&lon=$lon&format=json&accept-language=$langCode,en',
@@ -416,35 +493,67 @@ class LiveWeatherService implements WeatherService {
       final response = await http.get(
         uri,
         headers: {'User-Agent': 'CaneCareAI-FarmerWeather/1.0'},
-      ).timeout(const Duration(seconds: 4));
+      ).timeout(const Duration(seconds: 6));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final address = data['address'] as Map<String, dynamic>?;
         if (address != null) {
-          final town = address['town'] ??
-              address['village'] ??
+          villageName = address['village'] ??
+              address['hamlet'] ??
+              address['subdistrict'] ??
               address['suburb'] ??
+              address['town'] ??
+              address['city_district'] ??
               address['city'] ??
               address['county'];
-          String? district = address['state_district'] ?? address['county'] ?? address['state'];
-          if (district != null) {
-            district = district.replaceAll(' जिल्हा', '').replaceAll(' District', '');
-          }
-
-          if (town != null && district != null) {
-            return '$town, $district';
-          } else if (town != null) {
-            return '$town, महाराष्ट्र';
-          }
         }
       }
-    } catch (_) {
-      // Fallback to closest sugarcane town if network or geocoding fails
+    } catch (_) {}
+
+    final isMr = langCode == 'mr';
+
+    // --- Step 3: Cluster match to find the true closest center ---
+    final clusters = [
+      (distBahadurpur, isMr ? 'बहादूरपूर' : 'Bahadurpur', isMr ? 'अहिल्यानगर' : 'Ahilyanagar'),
+      (distShirdi, isMr ? 'शिर्डी' : 'Shirdi', isMr ? 'अहिल्यानगर' : 'Ahilyanagar'),
+      (distRahata, isMr ? 'राहाता' : 'Rahata', isMr ? 'अहिल्यानगर' : 'Ahilyanagar'),
+      (distKopargaon, isMr ? 'कोपरगाव' : 'Kopargaon', isMr ? 'अहिल्यानगर' : 'Ahilyanagar'),
+      (distShrirampur, isMr ? 'श्रीरामपूर' : 'Shrirampur', isMr ? 'अहिल्यानगर' : 'Ahilyanagar'),
+      (distSangamner, isMr ? 'संगमनेर' : 'Sangamner', isMr ? 'अहिल्यानगर' : 'Ahilyanagar'),
+      (distSinnar, isMr ? 'सिन्नर' : 'Sinnar', isMr ? 'नाशिक' : 'Nashik'),
+      (distNashik, isMr ? 'नाशिक' : 'Nashik', isMr ? 'महाराष्ट्र' : 'Maharashtra'),
+      (distNagar, isMr ? 'अहिल्यानगर' : 'Ahilyanagar', isMr ? 'महाराष्ट्र' : 'Maharashtra'),
+    ];
+    clusters.sort((a, b) => a.$1.compareTo(b.$1));
+    final closest = clusters.first;
+
+    if (closest.$1 <= 20) {
+      final place = villageName ?? closest.$2;
+      return '$place, ${closest.$3}';
     }
 
+    // --- Step 4: Generic fallback using nearest known town ---
     final nearest = findNearestTown(lat, lon);
+    if (villageName != null && villageName.isNotEmpty) {
+      return isMr
+          ? '$villageName, ${nearest.districtMr}'
+          : '$villageName, ${nearest.districtEn}';
+    }
     return nearest.displayName(langCode);
+  }
+
+  double _km(double lat1, double lon1, double lat2, double lon2) {
+    const r = 6371.0;
+    final dLat = (lat2 - lat1) * 3.14159265358979 / 180;
+    final dLon = (lon2 - lon1) * 3.14159265358979 / 180;
+    final sinHalfDLat = dLat / 2;
+    final sinHalfDLon = dLon / 2;
+    final a = sinHalfDLat * sinHalfDLat +
+        (lat1 * 3.14159265358979 / 180) * (lat2 * 3.14159265358979 / 180) *
+            sinHalfDLon * sinHalfDLon;
+    final c = 2 * (a < 1 ? a : 1 - a);
+    return r * c;
   }
 
   @override

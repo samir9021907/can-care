@@ -15,6 +15,7 @@ import 'about_screen.dart';
 import 'privacy_policy_screen.dart';
 import 'terms_screen.dart';
 import 'sign_in_screen.dart';
+import 'farmer_community_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   final VoidCallback onNavigateToHistory;
@@ -169,16 +170,6 @@ class ProfileScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.edit_outlined, size: 20, color: Color(0xFF2E7D32)),
-                    tooltip: loc.translate('edit'),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const EditProfileScreen()),
-                      );
-                    },
-                  ),
                 ],
               ),
             ),
@@ -251,6 +242,24 @@ class ProfileScreen extends StatelessWidget {
                     icon: Icons.bookmark_border_rounded,
                     title: loc.translate('profile_saved_reports'),
                     onTap: onNavigateToHistory,
+                  ),
+                  _buildDivider(),
+
+                  // 5. Saved Community Posts (Instagram-like Saved Collection)
+                  _buildRowItem(
+                    icon: Icons.bookmarks_outlined,
+                    title: loc.translate('profile_saved_posts'),
+                    trailingText: '🔖',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const FarmerCommunityScreen(
+                            initialCategoryId: 'saved',
+                          ),
+                        ),
+                      );
+                    },
                   ),
                   _buildDivider(),
 
@@ -431,23 +440,6 @@ class ProfileScreen extends StatelessWidget {
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: Color(0xFF14451D),
-                ),
-              ),
-              const Spacer(),
-              InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const EditProfileScreen()),
-                  );
-                },
-                child: Text(
-                  loc.translate('edit'),
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF2E7D32),
-                  ),
                 ),
               ),
             ],

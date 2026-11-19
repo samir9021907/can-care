@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/app_colors.dart';
 import '../localization/app_localizations.dart';
@@ -143,7 +144,10 @@ class _WeatherScreenState extends State<WeatherScreen> {
 
       if (!mounted) return;
 
-      if (gpsResult != null) {
+      if (gpsResult != null &&
+          gpsResult['latitude'] != null &&
+          gpsResult['longitude'] != null &&
+          gpsResult['placeName'] != null) {
         final placeName = gpsResult['placeName'] as String;
         final lat = gpsResult['latitude'] as double;
         final lon = gpsResult['longitude'] as double;
@@ -178,18 +182,65 @@ class _WeatherScreenState extends State<WeatherScreen> {
         }
       } else if (!silent) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(loc.translate('weather_gps_error')),
-              backgroundColor: const Color(0xFFC62828),
-              behavior: SnackBarBehavior.floating,
-              action: SnackBarAction(
-                label: loc.translate('select_district'),
-                textColor: Colors.white,
-                onPressed: _showLocationPicker,
+          final error = gpsResult?['error'];
+          if (error == 'SERVICE_DISABLED') {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  loc.language == AppLanguage.marathi
+                      ? 'कृपया मोबाईलचे GPS / लोकेशन चालू करा'
+                      : (loc.language == AppLanguage.hindi
+                          ? 'कृपया मोबाइल का GPS / लोकेशन चालू करें'
+                          : 'Please turn on device GPS / Location'),
+                ),
+                backgroundColor: const Color(0xFFC62828),
+                behavior: SnackBarBehavior.floating,
+                action: SnackBarAction(
+                  label: loc.language == AppLanguage.marathi
+                      ? 'चालू करा'
+                      : (loc.language == AppLanguage.hindi ? 'चालू करें' : 'Turn On'),
+                  textColor: Colors.amber,
+                  onPressed: () {
+                    Geolocator.openLocationSettings();
+                  },
+                ),
               ),
-            ),
-          );
+            );
+          } else if (error == 'PERMISSION_DENIED_FOREVER') {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  loc.language == AppLanguage.marathi
+                      ? 'लोकेशन परवानगी आवश्यक आहे. Settings मधून द्या.'
+                      : (loc.language == AppLanguage.hindi
+                          ? 'लोकेशन अनुमति आवश्यक है। Settings से अनुमति दें।'
+                          : 'Location permission needed. Please enable in Settings.'),
+                ),
+                backgroundColor: const Color(0xFFC62828),
+                behavior: SnackBarBehavior.floating,
+                action: SnackBarAction(
+                  label: 'Settings',
+                  textColor: Colors.amber,
+                  onPressed: () {
+                    Geolocator.openAppSettings();
+                  },
+                ),
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(loc.translate('weather_gps_error')),
+                backgroundColor: const Color(0xFFC62828),
+                behavior: SnackBarBehavior.floating,
+                action: SnackBarAction(
+                  label: loc.translate('select_district'),
+                  textColor: Colors.white,
+                  onPressed: _showLocationPicker,
+                ),
+              ),
+            );
+          }
         }
       }
     } catch (e) {

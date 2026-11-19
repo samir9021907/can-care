@@ -1,8 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/scan_report.dart';
-import '../models/disease_info.dart';
 
 class HistoryCard extends StatelessWidget {
   final ScanReport report;

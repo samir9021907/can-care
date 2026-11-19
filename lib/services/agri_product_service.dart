@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/recommended_product.dart';
+import 'live_weather_service.dart';
 
 /// User's geographic location information for finding nearest Krishi Kendras
 class UserLocationInfo {
@@ -819,10 +820,15 @@ class AgriProductService {
     ),
   ];
 
-  /// Get current user location using live device GPS, falling back to farmer's home in Bahadurpur/Shirdi
+  /// Get current user location using live device GPS with fallback to IP location and farmer's home
   static Future<UserLocationInfo> getCurrentUserLocation({bool forceRefresh = false}) async {
+    double? lat;
+    double? lng;
+    bool isLive = false;
+
+    // 1. Try real-time device GPS
     try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (serviceEnabled) {
         LocationPermission permission = await Geolocator.checkPermission();
         if (permission == LocationPermission.denied) {
@@ -832,79 +838,94 @@ class AgriProductService {
         if (permission == LocationPermission.whileInUse ||
             permission == LocationPermission.always) {
           Position? position;
-          if (!forceRefresh) {
-            position = await Geolocator.getLastKnownPosition();
+          // Step 1A: Attempt fresh GPS position first
+          try {
+            position = await Geolocator.getCurrentPosition(
+              locationSettings: const LocationSettings(
+                accuracy: LocationAccuracy.high,
+                timeLimit: Duration(seconds: 7),
+              ),
+            );
+          } catch (_) {
+            // Step 1B: Fallback to last known position
+            try {
+              position = await Geolocator.getLastKnownPosition();
+            } catch (_) {}
           }
-          position ??= await Geolocator.getCurrentPosition(
-            locationSettings: const LocationSettings(
-              accuracy: LocationAccuracy.medium,
-              timeLimit: Duration(seconds: 4),
-            ),
-          );
 
           if (position != null) {
-            final lat = position.latitude;
-            final lng = position.longitude;
-
-            // Compute distances to major regional clusters
-            final dBahadurpur = Geolocator.distanceBetween(lat, lng, 19.7420, 74.5180) / 1000.0;
-            final dShirdi = Geolocator.distanceBetween(lat, lng, 19.7645, 74.4762) / 1000.0;
-            final dRahata = Geolocator.distanceBetween(lat, lng, 19.7139, 74.4925) / 1000.0;
-            final dKopargaon = Geolocator.distanceBetween(lat, lng, 19.8870, 74.4828) / 1000.0;
-            final dShrirampur = Geolocator.distanceBetween(lat, lng, 19.6200, 74.6500) / 1000.0;
-            final dSangamner = Geolocator.distanceBetween(lat, lng, 19.5700, 74.2100) / 1000.0;
-            final dSinnar = Geolocator.distanceBetween(lat, lng, 19.8450, 73.9980) / 1000.0;
-            final dNashik = Geolocator.distanceBetween(lat, lng, 19.9975, 73.7898) / 1000.0;
-            final dNagar = Geolocator.distanceBetween(lat, lng, 19.0948, 74.7480) / 1000.0;
-            final dPune = Geolocator.distanceBetween(lat, lng, 18.5204, 73.8567) / 1000.0;
-            final dSatara = Geolocator.distanceBetween(lat, lng, 17.6805, 74.0183) / 1000.0;
-
-            String name;
-            String short;
-
-            if (dBahadurpur <= 18 || dShirdi <= 20 || dRahata <= 18) {
-              name = 'बहादूरपूर / राहाता परिसर (शिर्डी जवळ, अहिल्यानगर)';
-              short = 'बहादूरपूर / शिर्डी';
-            } else if (dKopargaon <= 20) {
-              name = 'कोपरगाव परिसर (अहिल्यानगर)';
-              short = 'कोपरगाव';
-            } else if (dShrirampur <= 20) {
-              name = 'श्रीरामपूर परिसर (अहिल्यानगर)';
-              short = 'श्रीरामपूर';
-            } else if (dSangamner <= 25) {
-              name = 'संगमनेर परिसर (अहिल्यानगर)';
-              short = 'संगमनेर';
-            } else if (dSinnar <= 25) {
-              name = 'सिन्नर परिसर (नाशिक जिल्हा)';
-              short = 'सिन्नर';
-            } else if (dNashik <= 30) {
-              name = 'नाशिक शहर व परिसर';
-              short = 'नाशिक';
-            } else if (dNagar <= 30) {
-              name = 'अहमदनगर (अहिल्यानगर) परिसर';
-              short = 'अहिल्यानगर';
-            } else if (dPune <= 35) {
-              name = 'पुणे / बारामती परिसर';
-              short = 'पुणे / बारामती';
-            } else if (dSatara <= 40) {
-              name = 'सातारा / कोल्हापूर परिसर';
-              short = 'सातारा';
-            } else {
-              name = 'थेट GPS स्थान (${lat.toStringAsFixed(2)}, ${lng.toStringAsFixed(2)})';
-              short = 'थेट स्थान';
-            }
-
-            return UserLocationInfo(
-              latitude: lat,
-              longitude: lng,
-              locationName: name,
-              shortName: short,
-              isLiveGps: true,
-            );
+            lat = position.latitude;
+            lng = position.longitude;
+            isLive = true;
           }
         }
       }
     } catch (_) {}
+
+    // 2. Fallback to HTTPS IP Geolocation if hardware GPS is not available (desktop/emulator/indoors)
+    if (lat == null || lng == null) {
+      try {
+        final gpsResult = await LiveWeatherService.instance.detectLiveGpsLocation();
+        if (gpsResult != null &&
+            gpsResult['latitude'] != null &&
+            gpsResult['longitude'] != null) {
+          lat = gpsResult['latitude'] as double;
+          lng = gpsResult['longitude'] as double;
+          isLive = true;
+        }
+      } catch (_) {}
+    }
+
+    // 3. Resolve location name and nearest cluster if coordinates available
+    if (lat != null && lng != null) {
+      // Compute geodesic distances to major regional clusters
+      final dBahadurpur = Geolocator.distanceBetween(lat, lng, 19.7420, 74.5180) / 1000.0;
+      final dShirdi = Geolocator.distanceBetween(lat, lng, 19.7645, 74.4762) / 1000.0;
+      final dRahata = Geolocator.distanceBetween(lat, lng, 19.7139, 74.4925) / 1000.0;
+      final dKopargaon = Geolocator.distanceBetween(lat, lng, 19.8870, 74.4828) / 1000.0;
+      final dShrirampur = Geolocator.distanceBetween(lat, lng, 19.6200, 74.6500) / 1000.0;
+      final dSangamner = Geolocator.distanceBetween(lat, lng, 19.5700, 74.2100) / 1000.0;
+      final dSinnar = Geolocator.distanceBetween(lat, lng, 19.8450, 73.9980) / 1000.0;
+      final dNashik = Geolocator.distanceBetween(lat, lng, 19.9975, 73.7898) / 1000.0;
+      final dNagar = Geolocator.distanceBetween(lat, lng, 19.0948, 74.7480) / 1000.0;
+      final dPune = Geolocator.distanceBetween(lat, lng, 18.5204, 73.8567) / 1000.0;
+      final dSatara = Geolocator.distanceBetween(lat, lng, 17.6805, 74.0183) / 1000.0;
+
+      final clusters = [
+        ('बहादूरपूर', 'बहादूरपूर परिसर (शिर्डी जवळ, अहिल्यानगर)', dBahadurpur),
+        ('शिर्डी', 'शिर्डी परिसर (अहिल्यानगर)', dShirdi),
+        ('राहाता', 'राहाता परिसर (अहिल्यानगर)', dRahata),
+        ('कोपरगाव', 'कोपरगाव परिसर (अहिल्यानगर)', dKopargaon),
+        ('श्रीरामपूर', 'श्रीरामपूर परिसर (अहिल्यानगर)', dShrirampur),
+        ('संगमनेर', 'संगमनेर परिसर (अहिल्यानगर)', dSangamner),
+        ('सिन्नर', 'सिन्नर परिसर (नाशिक जिल्हा)', dSinnar),
+        ('नाशिक', 'नाशिक शहर व परिसर', dNashik),
+        ('अहिल्यानगर', 'अहमदनगर (अहिल्यानगर) परिसर', dNagar),
+        ('पुणे / बारामती', 'पुणे / बारामती परिसर', dPune),
+        ('सातारा', 'सातारा / कोल्हापूर परिसर', dSatara),
+      ];
+      clusters.sort((a, b) => a.$3.compareTo(b.$3));
+      final closest = clusters.first;
+
+      String name;
+      String short;
+
+      if (closest.$3 <= 25) {
+        name = closest.$2;
+        short = closest.$1;
+      } else {
+        name = 'थेट स्थान (${lat.toStringAsFixed(2)}, ${lng.toStringAsFixed(2)})';
+        short = 'थेट स्थान';
+      }
+
+      return UserLocationInfo(
+        latitude: lat,
+        longitude: lng,
+        locationName: name,
+        shortName: short,
+        isLiveGps: isLive,
+      );
+    }
 
     // Default Fallback: Farmer's home in Bahadurpur, near Shirdi / Rahata
     return const UserLocationInfo(
