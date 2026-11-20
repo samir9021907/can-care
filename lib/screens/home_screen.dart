@@ -8,6 +8,8 @@ import '../providers/auth_provider.dart';
 import '../widgets/farmer_avatar_widget.dart';
 import '../widgets/top_notification.dart';
 import '../models/disease_info.dart';
+import '../models/crop_tip.dart';
+import 'crop_tip_detail_screen.dart';
 import 'crop_tips_screen.dart';
 import 'disease_detail_screen.dart';
 import 'help_support_screen.dart';
@@ -16,7 +18,9 @@ import 'sugarcane_advisory_screen.dart';
 import 'weather_screen.dart';
 import 'sugarcane_care_guide_screen.dart';
 import 'farmer_community_screen.dart';
+import 'sugarcane_market_screen.dart';
 import '../services/notification_service.dart';
+import '../services/sugarcane_market_service.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback onNavigateToScan;
@@ -46,6 +50,8 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _liveLocation;
   int? _liveTemp;
   bool _isLiveGps = false;
+  String _marketSelectedMandiId = 'kolhapur';
+  bool _marketIsDailyView = true;
 
   @override
   void initState() {
@@ -1286,7 +1292,62 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const CropTipsScreen()),
+          MaterialPageRoute(
+            builder: (_) => CropTipDetailScreen(
+              tip: CropTip(
+                id: 'keep_field_clean',
+                title: _t(
+                  'तणमुक्त शेत आणि स्वच्छता व्यवस्थापन',
+                  'खरपतवार मुक्त खेत और स्वच्छता प्रबंधन',
+                  'Keep Field Clean & Weed-Free',
+                ),
+                marathiTitle: _t(
+                  'किडी व रोगांपासून संरक्षणासाठी कृषी सल्ला',
+                  'कीट व रोगों से सुरक्षा हेतु कृषि सलाह',
+                  'Agronomy Field Sanitation Guide',
+                ),
+                category: _t('तण व्यवस्थापन', 'खरपतवार प्रबंधन', 'Weed Management'),
+                iconKey: 'cleaning_services',
+                summary: _t(
+                  'उसाच्या शेतातील तण, पालापाचोळा व रोगट अवशेष वेळेवर नष्ट केल्यास कीड व रोगांचा प्रादुर्भाव ७०% पर्यंत रोखता येतो.',
+                  'गन्ने के खेत से खरपतवार और सूखे अवशेष समय पर हटाने से कीट और रोगों का प्रकोप ७०% तक कम हो जाता है।',
+                  'Timely weed removal, detrashing, and field sanitation prevents up to 70% of pest infestations and viral reservoirs.',
+                ),
+                guidelines: [
+                  _t(
+                    'उसाच्या सऱ्यांमधील तण वेळेवर काढून हवा व सूर्यप्रकाश खेळता ठेवा.',
+                    'गन्ने की नालियों से खरपतवार हटाकर हवा और धूप का संचार बनाए रखें।',
+                    'Routinely weed sugarcane furrows to improve aeration and light penetration.',
+                  ),
+                  _t(
+                    '५ व्या व ७ व्या महिन्यात उसाचे खालचे वाळलेले पाचट (Detrashing) काढून शेतात आच्छादन करा.',
+                    '५वें और ७वें महीने में नीचे की सूखी पत्तियां हटाकर खेत में मल्चिंग करें।',
+                    'Perform manual detrashing of bottom dry leaves at 5 and 7 months to prevent scale insect and mealybug build-up.',
+                  ),
+                  _t(
+                    'तांबडे कूज किंवा काणी रोगाने बाधित झालेली झाडे मुळासकट उपटून शेताबाहेर नष्ट करा.',
+                    'लाल सड़न या कंडुआ रोग से ग्रसित पौधे उखाड़कर खेत से बाहर नष्ट करें।',
+                    'Rogue out clumps showing red rot or smut whips completely and destroy them outside farm channels.',
+                  ),
+                  _t(
+                    'कापणीचे विळे व अवजारे एका प्लॉटवरून दुसऱ्या प्लॉटवर नेताना निर्जंतुक करा.',
+                    'कटाई के औजार एक खेत से दूसरे खेत में ले जाते समय साफ व विसंक्रमित करें।',
+                    'Disinfect harvesting knives and implements with mild bleach when shifting between plots.',
+                  ),
+                  _t(
+                    'पाटाच्या पाण्याच्या चारी व बांधांवर तण वाढू देऊ नका, यामुळे कीटकांना आश्रय मिळतो.',
+                    'सिंचाई की नालियों और मेड़ों पर खरपतवार न बढ़ने दें, इससे कीटों को बढ़ावा मिलता है।',
+                    'Keep irrigation laterals and furrow ridges free of weed hosts that harbor borers and pyrilla.',
+                  ),
+                ],
+                cautionNote: _t(
+                  'पाचट शेतात जाळू नका; ते सऱ्यांमध्ये दाबून कुजवावे किंवा कंपोस्ट करावे.',
+                  'खेत में पत्तियों को न जलाएं; उन्हें कंपोस्ट करें या मल्चिंग में उपयोग करें।',
+                  'Avoid burning sugarcane trash in the field; shred it for in-situ soil organic mulching.',
+                ),
+              ),
+            ),
+          ),
         );
       },
       child: Container(
@@ -2426,6 +2487,30 @@ class _HomeScreenState extends State<HomeScreen> {
   // NEW FEATURE 2: SUGARCANE MARKET TRENDS CARD (WITH ATTRACTIVE CHART)
   // =============================================================
   Widget _buildMarketTrendsCard() {
+    final mandi = SugarcaneMarketService.instance.getMandiById(_marketSelectedMandiId);
+    final allMandis = SugarcaneMarketService.instance.getAllMandis();
+    final isMr = AppLocalizations.of(context).language == AppLanguage.marathi;
+    final isHi = AppLocalizations.of(context).language == AppLanguage.hindi;
+    final mandiName = isMr ? mandi.nameMr : (isHi ? mandi.nameHi : mandi.nameEn);
+
+    final prices = _marketIsDailyView
+        ? mandi.dailyRates.map((d) => d.avgPrice).toList()
+        : mandi.monthlyRates.map((m) => m.avgPrice).toList();
+
+    final labels = _marketIsDailyView
+        ? mandi.dailyRates.map((d) {
+            return isMr ? d.dateLabelMr.split(' ')[0] : (isHi ? d.dateLabelHi.split(' ')[0] : d.dateLabelEn.split(' ')[0]);
+          }).toList()
+        : mandi.monthlyRates.map((m) {
+            return isMr ? m.monthLabelMr : (isHi ? m.monthLabelHi : m.monthLabelEn);
+          }).toList();
+
+    final minPrice = prices.reduce((a, b) => a < b ? a : b);
+    final maxPrice = prices.reduce((a, b) => a > b ? a : b);
+    final avgPrice = (prices.reduce((a, b) => a + b) / prices.length).roundToDouble();
+
+    final now = DateTime.now();
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -2444,7 +2529,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header: Icon + Title & Subtitle + 6M Tag
+          // 1. Header: Icon + Title & Subtitle + Daily/Season Pill
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -2466,20 +2551,62 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      _t('ऊस बाजार भाव व कल', 'गन्ना बाजार भाव व रुझान', 'Sugarcane Market Trends'),
-                      style: const TextStyle(
-                        fontSize: 15.5,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF14451D),
-                        letterSpacing: -0.2,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            _t('ऊस बाजार भाव व कल', 'गन्ना बाजार भाव व रुझान', 'Sugarcane Market Trends'),
+                            style: const TextStyle(
+                              fontSize: 15.5,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF14451D),
+                              letterSpacing: -0.2,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        // 🟢 LIVE Badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFDCFCE7),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: const Color(0xFF86EFAC)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 5,
+                                height: 5,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFF15803D),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 3),
+                              const Text(
+                                'LIVE',
+                                style: TextStyle(
+                                  fontSize: 8.5,
+                                  fontWeight: FontWeight.w900,
+                                  color: Color(0xFF15803D),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      _t('बाजारातील चालू दरांची माहिती ठेवा.', 'बाजार भाव की ताज़ा जानकारी रखें।', 'Stay updated with market prices.'),
+                      _t(
+                        'दररोजचे थेट बाजार भाव (${now.day}/${now.month}/${now.year})',
+                        'दैनिक लाइव मंडी भाव (${now.day}/${now.month}/${now.year})',
+                        'Daily live market rates (${now.day}/${now.month}/${now.year})',
+                      ),
                       style: const TextStyle(
                         fontSize: 11,
                         color: Color(0xFF6B8074),
@@ -2491,27 +2618,100 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
+              // Daily vs Season Toggle
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE8F8EE),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFC7EED4), width: 1),
+                  color: const Color(0xFFF1F6F2),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFD6E3D8)),
                 ),
-                child: Text(
-                  _t('६ महिने हंगाम', '६ महीने सीजन', '6M Season'),
-                  style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF15803D),
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    GestureDetector(
+                      onTap: () => setState(() => _marketIsDailyView = true),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: _marketIsDailyView ? const Color(0xFF14451D) : Colors.transparent,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Text(
+                          _t('दैनिक', 'दैनिक', 'Daily'),
+                          style: TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: _marketIsDailyView ? FontWeight.w800 : FontWeight.w600,
+                            color: _marketIsDailyView ? Colors.white : const Color(0xFF5A7265),
+                          ),
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => setState(() => _marketIsDailyView = false),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: !_marketIsDailyView ? const Color(0xFF14451D) : Colors.transparent,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Text(
+                          _t('हंगाम', 'सीजन', 'Season'),
+                          style: TextStyle(
+                            fontSize: 9.5,
+                            fontWeight: !_marketIsDailyView ? FontWeight.w800 : FontWeight.w600,
+                            color: !_marketIsDailyView ? Colors.white : const Color(0xFF5A7265),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
 
-          // Price & Trend Container (Fully responsive - no overflow)
+          // 2. Mandi Quick Selector Chips
+          SizedBox(
+            height: 28,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: allMandis.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 6),
+              itemBuilder: (context, idx) {
+                final m = allMandis[idx];
+                final isSelected = m.id == _marketSelectedMandiId;
+                final label = isMr ? m.districtMr : (isHi ? m.nameHi.split(' ')[0] : m.districtEn);
+                return GestureDetector(
+                  onTap: () => setState(() => _marketSelectedMandiId = m.id),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isSelected ? const Color(0xFFE8F5E9) : const Color(0xFFF7FAF7),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected ? const Color(0xFF15803D) : const Color(0xFFE0EAE1),
+                        width: isSelected ? 1.2 : 0.8,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                          color: isSelected ? const Color(0xFF15803D) : const Color(0xFF6B8074),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // 3. Price & Trend Container
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(12),
@@ -2527,7 +2727,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _t('एफआरपी हमीभाव दर', 'एफआरपी न्यूनतम मूल्य', 'FRP BENCHMARK RATE'),
+                        _t('आजचा थेट सरासरी दर', 'आज का लाइव औसत भाव', 'TODAY LIVE AVERAGE RATE'),
                         style: const TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w800,
@@ -2543,9 +2743,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           crossAxisAlignment: CrossAxisAlignment.baseline,
                           textBaseline: TextBaseline.alphabetic,
                           children: [
-                            const Text(
-                              '₹3,400',
-                              style: TextStyle(
+                            Text(
+                              '₹${mandi.currentAvgPrice.toInt()}',
+                              style: const TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.w900,
                                 color: Color(0xFF14451D),
@@ -2565,7 +2765,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        _t('कोल्हापूर बाजार समिती • बेस १०.२५% उतारा', 'कोल्हापुर मंडी • बेस १०.२५% रिकवरी', 'Kolhapur APMC • Base 10.25% recovery'),
+                        '$mandiName • ${_t('उतारा', 'रिकवरी', 'Recovery')} ${mandi.baseRecovery}%',
                         style: const TextStyle(
                           fontSize: 10,
                           color: Color(0xFF6B8074),
@@ -2579,29 +2779,27 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(width: 8),
                 // Compact Trend Badge
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                   decoration: BoxDecoration(
                     color: const Color(0xFFE8F8EE),
                     borderRadius: BorderRadius.circular(10),
-                    border:
-                        Border.all(color: const Color(0xFFC7EED4), width: 1),
+                    border: Border.all(color: const Color(0xFFC7EED4), width: 1),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Row(
+                      Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.arrow_upward_rounded,
                             size: 14,
                             color: Color(0xFF15803D),
                           ),
-                          SizedBox(width: 2),
+                          const SizedBox(width: 2),
                           Text(
-                            '+₹150',
-                            style: TextStyle(
+                            '+₹${mandi.dailyChange.toInt()}',
+                            style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w800,
                               color: Color(0xFF15803D),
@@ -2611,7 +2809,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        _t('+४.६% वाढ', '+४.६% बढ़त', '+4.6% trend'),
+                        _t('आजची वाढ', 'आज की बढ़त', 'today gain'),
                         style: const TextStyle(
                           fontSize: 9.5,
                           fontWeight: FontWeight.w600,
@@ -2624,23 +2822,23 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
 
-          // ATTRACTIVE PRICE TREND CHART AREA
+          // 4. ATTRACTIVE PRICE TREND CHART AREA
           Container(
             width: double.infinity,
             height: 105,
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
             child: CustomPaint(
               painter: _MarketTrendLineChartPainter(
-                prices: const [3150.0, 3200.0, 3260.0, 3320.0, 3370.0, 3400.0],
-                labels: const ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Current'],
+                prices: prices,
+                labels: labels,
               ),
             ),
           ),
           const SizedBox(height: 8),
 
-          // Mini Stats Bar: Min / Avg / Peak
+          // 5. Mini Stats Bar: Min / Avg / Peak
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -2654,7 +2852,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   Text(
-                    _t('किमान: ₹३,१५०', 'न्यूनतम: ₹३,१५०', 'Min: ₹3,150'),
+                    '${_t('किमान', 'न्यूनतम', 'Min')}: ₹${minPrice.toInt()}',
                     style: const TextStyle(
                       fontSize: 10.5,
                       fontWeight: FontWeight.w600,
@@ -2662,13 +2860,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  const Text(
-                    '•',
-                    style: TextStyle(color: Color(0xFFA5C4AE)),
-                  ),
+                  const Text('•', style: TextStyle(color: Color(0xFFA5C4AE))),
                   const SizedBox(width: 8),
                   Text(
-                    _t('सरासरी: ₹३,२८५', 'औसत: ₹३,२८५', 'Avg: ₹3,285'),
+                    '${_t('सरासरी', 'औसत', 'Avg')}: ₹${avgPrice.toInt()}',
                     style: const TextStyle(
                       fontSize: 10.5,
                       fontWeight: FontWeight.w600,
@@ -2676,13 +2871,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  const Text(
-                    '•',
-                    style: TextStyle(color: Color(0xFFA5C4AE)),
-                  ),
+                  const Text('•', style: TextStyle(color: Color(0xFFA5C4AE))),
                   const SizedBox(width: 8),
                   Text(
-                    _t('कमाल: ₹३,४००', 'उच्चतम: ₹३,४००', 'Peak: ₹3,400'),
+                    '${_t('कमाल', 'उच्चतम', 'Peak')}: ₹${maxPrice.toInt()}',
                     style: const TextStyle(
                       fontSize: 10.5,
                       fontWeight: FontWeight.w700,
@@ -2695,11 +2887,18 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 10),
 
-          // Bottom Action: View Market Trends
+          // 6. Bottom Action: View Daily Live Market Trends
           Align(
             alignment: Alignment.centerRight,
             child: InkWell(
-              onTap: () => _showMarketTrendsModal(context),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => SugarcaneMarketScreen(initialMandiId: _marketSelectedMandiId),
+                  ),
+                );
+              },
               borderRadius: BorderRadius.circular(8),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
@@ -2709,7 +2908,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        _t('बाजार भाव तपशील पहा', 'बाजार भाव विवरण देखें', 'View Market Trends'),
+                        _t('प्रत्येक दिवसाचा लाईव्ह दर पहा', 'प्रतिदिन का लाइव भाव देखें', 'View Daily Live Market'),
                         style: const TextStyle(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w700,
@@ -2734,162 +2933,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showMarketTrendsModal(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (ctx) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFDCE6DE),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Sugarcane FRP & APMC Rates',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF14451D),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close_rounded,
-                        color: Color(0xFF6B8074)),
-                    onPressed: () => Navigator.pop(ctx),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEFFBF4),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFD2F3DF)),
-                ),
-                child: Row(
-                  children: const [
-                    Icon(Icons.verified_rounded,
-                        color: Color(0xFF165228), size: 24),
-                    SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Central Government FRP Benchmark: ₹3,400/tonne for base 10.25% sugar recovery.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF14451D),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Regional APMC Benchmarks (Maharashtra):',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF14451D),
-                ),
-              ),
-              const SizedBox(height: 8),
-              _buildMarketRateRow('Kolhapur APMC', '₹3,550 - ₹3,720 / tonne', '+₹160'),
-              _buildMarketRateRow('Sangli & Satara', '₹3,450 - ₹3,600 / tonne', '+₹145'),
-              _buildMarketRateRow('Pune & Solapur', '₹3,350 - ₹3,480 / tonne', '+₹130'),
-              _buildMarketRateRow('Ahmednagar Region', '₹3,250 - ₹3,380 / tonne', '+₹120'),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                height: 46,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF165228),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    'Done',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildMarketRateRow(String market, String rate, String trend) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            market,
-            style: const TextStyle(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF153826),
-            ),
-          ),
-          Row(
-            children: [
-              Text(
-                rate,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF14451D),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE8F8EE),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  trend,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF15803D),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SugarcaneMarketScreen(initialMandiId: _marketSelectedMandiId),
       ),
     );
   }
@@ -2941,9 +2988,13 @@ class _MarketTrendLineChartPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (prices.isEmpty) return;
 
-    const minPrice = 3080.0;
-    const maxPrice = 3450.0;
-    const range = maxPrice - minPrice;
+    final minVal = prices.reduce((a, b) => a < b ? a : b);
+    final maxVal = prices.reduce((a, b) => a > b ? a : b);
+    final diff = maxVal - minVal;
+    final paddingVal = diff == 0 ? 50.0 : diff * 0.25;
+    final chartMin = minVal - paddingVal;
+    final chartMax = maxVal + paddingVal;
+    final range = chartMax - chartMin;
 
     const bottomPadding = 20.0;
     const topPadding = 12.0;
@@ -2966,7 +3017,7 @@ class _MarketTrendLineChartPainter extends CustomPainter {
 
     for (int i = 0; i < prices.length; i++) {
       final x = i * stepX;
-      final normalized = (prices[i] - minPrice) / range;
+      final normalized = range == 0 ? 0.5 : (prices[i] - chartMin) / range;
       final y = topPadding + chartHeight * (1.0 - normalized);
       points.add(Offset(x, y));
     }
@@ -3057,5 +3108,6 @@ class _MarketTrendLineChartPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _MarketTrendLineChartPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _MarketTrendLineChartPainter oldDelegate) =>
+      oldDelegate.prices != prices || oldDelegate.labels != labels;
 }

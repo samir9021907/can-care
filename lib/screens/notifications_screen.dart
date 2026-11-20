@@ -105,28 +105,34 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFFF7FAF5),
         elevation: 0,
+        titleSpacing: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF14451D)),
           onPressed: () => Navigator.pop(context),
         ),
         title: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              _t('सूचना', 'सूचनाएं', 'Notifications'),
-              style: const TextStyle(
-                color: Color(0xFF14451D),
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.3,
+            Flexible(
+              child: Text(
+                _t('सूचना', 'सूचनाएं', 'Notifications'),
+                style: const TextStyle(
+                  color: Color(0xFF14451D),
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.3,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             if (unread > 0) ...[
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: const Color(0xFF15803D),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
                   '$unread',
@@ -146,24 +152,46 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               onPressed: () async {
                 await _service.markAllAsRead();
               },
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
               child: Text(
                 _t('सर्व वाचले', 'सभी पढ़ें', 'Mark all read'),
                 style: const TextStyle(
                   color: Color(0xFF15803D),
-                  fontSize: 12.5,
+                  fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
               ),
             ),
           if (list.isNotEmpty)
             PopupMenuButton<String>(
+              padding: EdgeInsets.zero,
               icon: const Icon(Icons.more_vert_rounded, color: Color(0xFF14451D), size: 22),
               onSelected: (val) async {
-                if (val == 'clear') {
+                if (val == 'mark_all') {
+                  await _service.markAllAsRead();
+                } else if (val == 'clear') {
                   await _service.clearAll();
                 }
               },
               itemBuilder: (ctx) => [
+                if (unread > 0)
+                  PopupMenuItem(
+                    value: 'mark_all',
+                    child: Row(
+                      children: [
+                        const Icon(Icons.done_all_rounded, color: Color(0xFF15803D), size: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          _t('सर्व वाचलेले चिन्हांकित करा', 'सभी पढ़े के रूप में चिह्नित करें', 'Mark all as read'),
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                  ),
                 PopupMenuItem(
                   value: 'clear',
                   child: Row(

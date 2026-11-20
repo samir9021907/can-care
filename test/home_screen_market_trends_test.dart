@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:canecare/screens/home_screen.dart';
+import 'package:canecare/screens/sugarcane_market_screen.dart';
 
 void main() {
   testWidgets('Sugarcane Market Trends card renders responsively on narrow 320px screen without overflow',
@@ -28,20 +29,36 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // Verify Market Trends title and FRP Benchmark rate exist
+    // Verify Market Trends title and Live badge exist
     expect(find.text('Sugarcane Market Trends'), findsOneWidget);
-    expect(find.text('₹3,400'), findsOneWidget);
-    expect(find.text('+₹150'), findsOneWidget);
-    expect(find.text('+4.6% trend'), findsOneWidget);
-    expect(find.text('Min: ₹3,150'), findsOneWidget);
-    expect(find.text('Avg: ₹3,285'), findsOneWidget);
-    expect(find.text('Peak: ₹3,400'), findsWidgets);
-    expect(find.text('View Market Trends'), findsOneWidget);
+    expect(find.text('LIVE'), findsOneWidget);
+    expect(find.text('Daily'), findsOneWidget);
+    expect(find.text('Season'), findsOneWidget);
+    expect(find.text('View Daily Live Market'), findsOneWidget);
 
     // Verify CustomPaint for the chart is present
     expect(find.byType(CustomPaint), findsWidgets);
 
     // Verify no Flutter exceptions / overflows occurred
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('SugarcaneMarketScreen renders daily rates table, calculator and APMC list',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: SugarcaneMarketScreen(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SugarcaneMarketScreen), findsOneWidget);
+    expect(find.text('Live Sugarcane Market'), findsOneWidget);
+    expect(find.text('TODAY LIVE RATE'), findsOneWidget);
+    expect(find.text('Day-by-Day Live Rate Sheet'), findsOneWidget);
+    expect(find.text('7 Days Live'), findsOneWidget);
+    expect(find.text('Live FRP Sugarcane Calculator'), findsOneWidget);
+    expect(find.text('Active Regional Sugar Mills'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

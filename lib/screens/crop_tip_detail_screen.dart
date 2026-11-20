@@ -128,7 +128,9 @@ class CropTipDetailScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Management Objective',
+                      loc.isMarathi
+                          ? 'व्यवस्थापन उद्दिष्ट'
+                          : (loc.isHindi ? 'प्रबंधन उद्देश्य' : 'Management Objective'),
                       style: AppTypography.titleLarge.copyWith(
                         fontSize: 15,
                         color: AppColors.darkGreen,
@@ -164,7 +166,11 @@ class CropTipDetailScreen extends StatelessWidget {
                             size: 18, color: AppColors.primary),
                         const SizedBox(width: 8),
                         Text(
-                          'Step-by-Step Field Guidelines',
+                          loc.isMarathi
+                              ? 'महत्त्वाच्या शेत मार्गदर्शक सूचना'
+                              : (loc.isHindi
+                                  ? 'चरण-दर-चरण कृषि निर्देश'
+                                  : 'Step-by-Step Field Guidelines'),
                           style: AppTypography.titleLarge.copyWith(
                             fontSize: 15,
                             color: AppColors.darkGreen,
