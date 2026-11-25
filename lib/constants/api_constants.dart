@@ -1,11 +1,11 @@
 /// Centralized API configuration for CaneCare AI Cloud Backend.
 class ApiConstants {
-  // Local Backend URL (FastAPI running locally on your laptop)
-  static const String baseUrl = 'http://127.0.0.1:8000';
+  // Live Production Cloud Backend URL (Render Cloud)
+  static const String baseUrl = 'https://cancare-backend.onrender.com';
 
-  // Alternative URLs:
-  // For Android Emulator: 'http://10.0.2.2:8000'
-  // For Render Cloud:     'https://cancare-nrjr.onrender.com'
+  // Alternative URLs (for offline/local development):
+  // For Localhost PC:      'http://127.0.0.1:8000'
+  // For Android Emulator:  'http://10.0.2.2:8000'
 
   // Auth endpoints
   static const String signup = '$baseUrl/api/v1/auth/signup';
