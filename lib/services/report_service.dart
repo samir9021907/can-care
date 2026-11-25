@@ -37,24 +37,30 @@ class RemoteReportService implements ReportService {
         queryParams: {'filter': 'all', 'page': '1', 'limit': '50'},
       );
 
-      if (res is Map<String, dynamic> && res['scans'] is List) {
-        final list = (res['scans'] as List).cast<Map<String, dynamic>>();
+      final rawList = res is Map<String, dynamic> ? (res['items'] ?? res['scans']) : null;
+      if (rawList is List) {
+        final list = rawList.cast<Map<String, dynamic>>();
         final localDiseases = DiseaseInfo.getSugarcaneDiseases();
 
         final reports = list.map((item) {
           final scanId = item['scan_id']?.toString() ?? item['id']?.toString() ?? '';
-          final diseaseName = item['disease_name']?.toString() ?? 'Sugarcane Scan';
+          final diseaseName = item['display_name']?.toString() ?? item['disease']?.toString() ?? item['disease_name']?.toString() ?? 'Sugarcane Scan';
           final confidence = (item['confidence'] as num?)?.toDouble() ?? 0.90;
           final rawSeverity = item['severity']?.toString() ?? 'none';
-          final status = (item['status'] ?? '').toString().toLowerCase();
-          final isHealthy = status == 'healthy' || diseaseName.toLowerCase().contains('healthy');
+          final diseaseLabel = (item['disease'] ?? item['status'] ?? '').toString().toLowerCase();
+          final isHealthy = diseaseLabel == 'healthy' || diseaseName.toLowerCase().contains('healthy');
           final scanDateStr = item['created_at']?.toString() ?? '';
           final scanDate = DateTime.tryParse(scanDateStr) ?? DateTime.now();
 
           final matchedLocal = localDiseases.firstWhere(
-            (d) => d.name.toLowerCase() == diseaseName.toLowerCase() || d.id.toLowerCase() == diseaseName.toLowerCase(),
+            (d) => d.name.toLowerCase() == diseaseName.toLowerCase() || d.id.toLowerCase() == diseaseLabel || d.id.toLowerCase() == diseaseName.toLowerCase(),
             orElse: () => localDiseases.firstWhere((d) => d.isHealthy == isHealthy, orElse: () => localDiseases.first),
           );
+
+          String? imageUrl = item['image_url']?.toString();
+          if (imageUrl != null && imageUrl.startsWith('/')) {
+            imageUrl = '${ApiConstants.baseUrl}$imageUrl';
+          }
 
           return ScanReport(
             id: scanId,
@@ -66,7 +72,7 @@ class RemoteReportService implements ReportService {
             confidenceScore: confidence,
             severity: _parseSeverity(rawSeverity),
             scanDate: scanDate,
-            imagePath: item['image_url']?.toString(),
+            imagePath: imageUrl,
             isHealthy: isHealthy,
             isLowConfidence: confidence < 0.6,
             symptoms: matchedLocal.symptoms,
@@ -108,6 +114,11 @@ class LocalReportService implements ReportService {
   static final List<ScanReport> _sharedReports = [];
   static bool _initialized = false;
   bool simulateSaveFailure = false;
+
+  static void clearSharedReports() {
+    _sharedReports.clear();
+    _initialized = false;
+  }
 
   LocalReportService() {
     if (!_initialized) {

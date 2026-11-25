@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../localization/app_localizations.dart';
+import '../providers/history_provider.dart';
 import '../widgets/app_bottom_nav.dart';
 import '../widgets/canecare_drawer.dart';
 import 'home_screen.dart';
@@ -31,6 +33,11 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
     if (_currentIndex != 0) {
       _tabHistory.add(_currentIndex);
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<HistoryProvider>().loadReports();
+      }
+    });
   }
 
   void _onTabSelected(int index) {

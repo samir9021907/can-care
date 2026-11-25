@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../localization/app_localizations.dart';
 import '../providers/auth_provider.dart';
+import '../providers/history_provider.dart';
 import '../providers/locale_provider.dart';
+import '../services/report_service.dart';
 import '../widgets/confirm_dialog.dart';
 import '../widgets/farmer_avatar_widget.dart';
 import 'edit_profile_screen.dart';
@@ -39,6 +41,8 @@ class ProfileScreen extends StatelessWidget {
     );
 
     if (confirmed == true && context.mounted) {
+      context.read<HistoryProvider>().clearReports();
+      LocalReportService.clearSharedReports();
       await context.read<AuthProvider>().signOut();
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('canecare_is_logged_in', false);

@@ -282,6 +282,16 @@ class AuthProvider extends ChangeNotifier {
       await prefs.remove('canecare_is_logged_in');
       await prefs.remove('canecare_user_name');
       await prefs.remove('canecare_user_email');
+      await prefs.remove('user_full_name');
+      await prefs.remove('user_email');
+      await prefs.remove('user_phone');
+      await prefs.remove('user_region');
+      await prefs.remove('user_village');
+      await prefs.remove('user_avatar_path');
+      await prefs.remove('user_farm_size');
+      await prefs.remove('user_sugarcane_variety');
+      await prefs.remove('user_irrigation_type');
+      await prefs.remove('user_planting_season');
       await _authService.signOut();
     } catch (e) {
       debugPrint('[AuthProvider] signOut: ');

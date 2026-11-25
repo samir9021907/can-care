@@ -81,6 +81,7 @@ class RemotePredictionService implements PredictionService {
       final res = await _apiClient.postMultipart(
         url: ApiConstants.predict,
         filePath: imagePath,
+        fileBytes: imageBytes,
         fields: fields,
       );
 

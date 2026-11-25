@@ -80,7 +80,9 @@ class ApiClient {
 
   Future<dynamic> postMultipart({
     required String url,
-    required String filePath,
+    String? filePath,
+    Uint8List? fileBytes,
+    String? fileName,
     Map<String, String>? fields,
   }) async {
     await getAuthToken();
@@ -95,13 +97,24 @@ class ApiClient {
         request.fields.addAll(fields);
       }
 
-      // Attach file
-      final file = File(filePath);
-      if (await file.exists()) {
-        final multipartFile = await http.MultipartFile.fromPath('file', filePath);
-        request.files.add(multipartFile);
+      // Attach file safely for both Web (bytes) and Mobile/Desktop (path or bytes)
+      if (fileBytes != null && fileBytes.isNotEmpty) {
+        final name = fileName ?? (filePath != null ? filePath.split(RegExp(r'[/\\]')).last : 'leaf_scan.jpg');
+        request.files.add(http.MultipartFile.fromBytes('file', fileBytes, filename: name));
+      } else if (filePath != null && filePath.isNotEmpty) {
+        if (!kIsWeb) {
+          final file = File(filePath);
+          if (await file.exists()) {
+            final multipartFile = await http.MultipartFile.fromPath('file', filePath);
+            request.files.add(multipartFile);
+          } else {
+            throw Exception('Image file not found at path: $filePath');
+          }
+        } else {
+          throw Exception('Direct file paths are unsupported on Flutter Web. Please provide image bytes.');
+        }
       } else {
-        throw Exception('Image file not found at path: $filePath');
+        throw Exception('No image file or byte stream provided for upload.');
       }
 
       final streamedResponse =

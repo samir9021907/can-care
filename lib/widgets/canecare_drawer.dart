@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/auth_provider.dart';
+import '../providers/history_provider.dart';
+import '../services/report_service.dart';
 import '../localization/app_localizations.dart';
 import '../widgets/cane_logo.dart';
 import '../widgets/confirm_dialog.dart';
@@ -38,6 +40,8 @@ class CaneCareDrawer extends StatelessWidget {
     );
 
     if (confirmed == true && context.mounted) {
+      context.read<HistoryProvider>().clearReports();
+      LocalReportService.clearSharedReports();
       await context.read<AuthProvider>().signOut();
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('canecare_is_logged_in', false);
