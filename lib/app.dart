@@ -16,6 +16,7 @@ import 'services/auth_service.dart';
 import 'services/prediction_service.dart';
 import 'services/report_service.dart';
 import 'services/disease_service.dart';
+import 'services/settings_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/main_navigation_shell.dart';
 import 'screens/splash_screen.dart';
@@ -44,7 +45,9 @@ class CaneCareApp extends StatelessWidget {
           create: (_) => DiseaseLibraryProvider(diseaseService: RemoteDiseaseService()),
         ),
         ChangeNotifierProvider(create: (_) => TipsProvider()),
-        ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ChangeNotifierProvider(
+          create: (_) => SettingsProvider(settingsService: RemoteSettingsService()),
+        ),
       ],
       child: Consumer<LocaleProvider>(
         builder: (context, localeProvider, _) {

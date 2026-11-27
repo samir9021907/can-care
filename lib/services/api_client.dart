@@ -78,6 +78,22 @@ class ApiClient {
     }
   }
 
+  Future<dynamic> patch(String url, Map<String, dynamic> body) async {
+    await getAuthToken();
+    final uri = Uri.parse(url);
+
+    try {
+      final response = await http
+          .patch(uri, headers: _buildHeaders(), body: jsonEncode(body))
+          .timeout(const Duration(seconds: 20));
+
+      return _processResponse(response);
+    } catch (e) {
+      debugPrint('[ApiClient] PATCH error on $url: $e');
+      rethrow;
+    }
+  }
+
   Future<dynamic> postMultipart({
     required String url,
     String? filePath,

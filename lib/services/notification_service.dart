@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_notification.dart';
+import '../constants/api_constants.dart';
+import 'api_client.dart';
 
 class NotificationService extends ChangeNotifier {
   static final NotificationService _instance = NotificationService._internal();
@@ -43,6 +45,42 @@ class NotificationService extends ChangeNotifier {
 
     _initialized = true;
     notifyListeners();
+    fetchRemoteNotifications();
+  }
+
+  Future<void> fetchRemoteNotifications() async {
+    try {
+      final res = await ApiClient().get(ApiConstants.notifications);
+      List? rawList;
+      if (res is Map && res['notifications'] is List) {
+        rawList = res['notifications'] as List;
+      } else if (res is List) {
+        rawList = res;
+      }
+      if (rawList != null && rawList.isNotEmpty) {
+        final readIds =
+            _notifications.where((n) => n.isRead).map((n) => n.id).toSet();
+        final fetched = <AppNotification>[];
+        for (final item in rawList) {
+          if (item is Map) {
+            final notif =
+                AppNotification.fromJson(Map<String, dynamic>.from(item));
+            if (readIds.contains(notif.id)) {
+              notif.isRead = true;
+            }
+            fetched.add(notif);
+          }
+        }
+        if (fetched.isNotEmpty) {
+          _notifications.clear();
+          _notifications.addAll(fetched);
+          await _persist();
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      debugPrint('[NotificationService] fetchRemoteNotifications: $e');
+    }
   }
 
   void _seedDefaultNotifications() {

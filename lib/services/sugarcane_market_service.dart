@@ -1,4 +1,6 @@
 import 'package:flutter/foundation.dart';
+import '../constants/api_constants.dart';
+import 'api_client.dart';
 
 /// Representation of a single day's sugarcane market rate
 class DailyMarketRate {
@@ -206,6 +208,9 @@ class SugarcaneMarketService {
 
   /// Get all supported sugarcane APMC mandis across Maharashtra with live dynamic rates
   List<SugarcaneMandi> getAllMandis() {
+    if (_cachedMandis != null && _cachedMandis!.isNotEmpty) {
+      return _cachedMandis!;
+    }
     return [
       SugarcaneMandi(
         id: 'kolhapur',
@@ -416,6 +421,119 @@ class SugarcaneMarketService {
     return list.firstWhere(
       (m) => m.id == id,
       orElse: () => list.first,
+    );
+  }
+
+  List<SugarcaneMandi>? _cachedMandis;
+
+  Future<List<SugarcaneMandi>> fetchRemoteMandis() async {
+    try {
+      final res = await ApiClient().get(ApiConstants.marketRates);
+      if (res is Map && res['mandis'] is List) {
+        final List rawList = res['mandis'];
+        final parsed = <SugarcaneMandi>[];
+        for (final item in rawList) {
+          if (item is Map) {
+            parsed.add(_mapMandiFromJson(Map<String, dynamic>.from(item)));
+          }
+        }
+        if (parsed.isNotEmpty) {
+          _cachedMandis = parsed;
+          return _cachedMandis!;
+        }
+      }
+    } catch (e) {
+      debugPrint('[SugarcaneMarketService] fetchRemoteMandis error: $e');
+    }
+    return getAllMandis();
+  }
+
+  SugarcaneMandi _mapMandiFromJson(Map<String, dynamic> json) {
+    final dailyList = <DailyMarketRate>[];
+    if (json['daily_rates'] is List) {
+      for (final d in (json['daily_rates'] as List)) {
+        if (d is Map) {
+          dailyList.add(
+            DailyMarketRate(
+              date: DateTime.tryParse(d['date']?.toString() ?? '') ??
+                  DateTime.now(),
+              dateLabelMr: d['date_label_mr']?.toString() ?? '',
+              dateLabelHi: d['date_label_hi']?.toString() ?? '',
+              dateLabelEn: d['date_label_en']?.toString() ?? '',
+              dayNameMr: d['day_name_mr']?.toString() ?? '',
+              dayNameHi: d['day_name_hi']?.toString() ?? '',
+              dayNameEn: d['day_name_en']?.toString() ?? '',
+              avgPrice: (d['avg_price'] as num?)?.toDouble() ?? 3400.0,
+              minPrice: (d['min_price'] as num?)?.toDouble() ?? 3300.0,
+              maxPrice: (d['max_price'] as num?)?.toDouble() ?? 3500.0,
+              change: (d['change'] as num?)?.toDouble() ?? 0.0,
+              arrivalTonnes: (d['arrival_tonnes'] as num?)?.toInt() ?? 2000,
+              recoveryPercent:
+                  (d['recovery_percent'] as num?)?.toDouble() ?? 10.25,
+            ),
+          );
+        }
+      }
+    }
+
+    final monthlyList = <MonthlyMarketRate>[];
+    if (json['monthly_rates'] is List) {
+      for (final m in (json['monthly_rates'] as List)) {
+        if (m is Map) {
+          monthlyList.add(
+            MonthlyMarketRate(
+              monthLabelMr: m['month_label_mr']?.toString() ?? '',
+              monthLabelHi: m['month_label_hi']?.toString() ?? '',
+              monthLabelEn: m['month_label_en']?.toString() ?? '',
+              avgPrice: (m['avg_price'] as num?)?.toDouble() ?? 3400.0,
+              minPrice: (m['min_price'] as num?)?.toDouble() ?? 3300.0,
+              maxPrice: (m['max_price'] as num?)?.toDouble() ?? 3500.0,
+            ),
+          );
+        }
+      }
+    }
+
+    final activeFactories = (json['active_factories'] as List?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        <String>[];
+
+    final currentAvg =
+        (json['current_avg_price'] as num?)?.toDouble() ?? 3400.0;
+    final baseRec = (json['base_recovery'] as num?)?.toDouble() ?? 10.25;
+
+    return SugarcaneMandi(
+      id: json['id']?.toString() ?? '',
+      nameMr:
+          json['name_mr']?.toString() ?? json['nameMr']?.toString() ?? '',
+      nameHi:
+          json['name_hi']?.toString() ?? json['nameHi']?.toString() ?? '',
+      nameEn:
+          json['name_en']?.toString() ?? json['nameEn']?.toString() ?? '',
+      districtMr: json['district_mr']?.toString() ??
+          json['districtMr']?.toString() ??
+          '',
+      districtEn: json['district_en']?.toString() ??
+          json['districtEn']?.toString() ??
+          '',
+      baseRecovery: baseRec,
+      currentAvgPrice: currentAvg,
+      minPrice: (json['min_price'] as num?)?.toDouble() ?? (currentAvg - 80),
+      maxPrice: (json['max_price'] as num?)?.toDouble() ?? (currentAvg + 80),
+      dailyChange: (json['daily_change'] as num?)?.toDouble() ?? 0.0,
+      todayArrivalTonnes:
+          (json['today_arrival_tonnes'] as num?)?.toInt() ?? 2500,
+      dailyRates: dailyList.isNotEmpty
+          ? dailyList
+          : generate7DayRates(
+              baseAvgPrice: currentAvg,
+              baseRecovery: baseRec,
+              dailyPriceOffsets: [-30, -20, -10, 0, 10, 15, 20],
+              dailyArrivals: [2200, 2300, 2400, 2450, 2500, 2550, 2600],
+            ),
+      monthlyRates: monthlyList,
+      activeFactories: activeFactories,
     );
   }
 }

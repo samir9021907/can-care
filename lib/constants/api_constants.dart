@@ -25,11 +25,22 @@ class ApiConstants {
   static const String history = '$baseUrl/api/v1/history';
   static String deleteScan(String scanId) => '$baseUrl/api/v1/scans/$scanId';
 
-  // Feedback
+  // Feedback (Prediction ground-truth & General app feedback)
   static const String feedback = '$baseUrl/api/v1/feedback';
+  static const String appFeedback = '$baseUrl/api/v1/feedback/app';
 
-  // Agro-Medical Shops
+  // Agro-Medical Shops & Recommended Products
   static const String shops = '$baseUrl/api/v1/shops';
+  static const String products = '$baseUrl/api/v1/shops/products';
+
+  // Sugarcane Market & Mandi Rates
+  static const String marketRates = '$baseUrl/api/v1/market/rates';
+
+  // Farmer Advisory & Community Questions
+  static const String advisoryQuestions = '$baseUrl/api/v1/advisory/questions';
+
+  // Notifications
+  static const String notifications = '$baseUrl/api/v1/notifications';
 
   // Health
   static const String health = '$baseUrl/api/v1/health';
@@ -38,4 +49,3 @@ class ApiConstants {
   static const String tokenKey = 'canecare_auth_token';
   static const String userKey = 'canecare_cached_user';
 }
-

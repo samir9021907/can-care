@@ -22,6 +22,7 @@ class _SugarcaneAdvisoryScreenState extends State<SugarcaneAdvisoryScreen> {
   void initState() {
     super.initState();
     _advisoryService.addListener(_onServiceUpdate);
+    _advisoryService.fetchQuestions();
   }
 
   @override

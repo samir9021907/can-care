@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../constants/api_constants.dart';
+import 'api_client.dart';
 
 class AdvisoryCategory {
   final String id;
@@ -46,6 +48,45 @@ class AdvisoryService extends ChangeNotifier {
 
   AdvisoryService._internal() {
     _initDefaultQuestions();
+    fetchQuestions();
+  }
+
+  Future<void> fetchQuestions() async {
+    try {
+      final res = await ApiClient().get(ApiConstants.advisoryQuestions);
+      List? rawList;
+      if (res is List) {
+        rawList = res;
+      } else if (res is Map && res['questions'] is List) {
+        rawList = res['questions'];
+      }
+      if (rawList != null && rawList.isNotEmpty) {
+        final fetched = <UserQuestion>[];
+        for (final item in rawList) {
+          if (item is Map) {
+            fetched.add(UserQuestion(
+              id: item['id']?.toString() ?? '',
+              title: item['title']?.toString() ?? '',
+              description: item['description']?.toString() ?? '',
+              category: item['category']?.toString() ?? 'ऊस पिकातील रोग',
+              createdAt:
+                  DateTime.tryParse(item['created_at']?.toString() ?? '') ??
+                      DateTime.now(),
+              status: item['status']?.toString() ??
+                  'तज्ञांच्या उत्तराची प्रतीक्षा (Pending)',
+              expertAnswer: item['expert_answer']?.toString(),
+            ));
+          }
+        }
+        if (fetched.isNotEmpty) {
+          _allQuestions.clear();
+          _allQuestions.addAll(fetched);
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      debugPrint('[AdvisoryService] fetchQuestions error: $e');
+    }
   }
 
   final List<UserQuestion> _myQuestions = [];
@@ -144,11 +185,11 @@ class AdvisoryService extends ChangeNotifier {
     ),
   ];
 
-  void addQuestion({
+  Future<void> addQuestion({
     required String title,
     required String description,
     required String category,
-  }) {
+  }) async {
     final newQ = UserQuestion(
       id: 'usr_q_${DateTime.now().millisecondsSinceEpoch}',
       title: title,
@@ -161,5 +202,16 @@ class AdvisoryService extends ChangeNotifier {
     _myQuestions.insert(0, newQ);
     _allQuestions.insert(0, newQ);
     notifyListeners();
+
+    try {
+      final payload = {
+        'title': title.trim(),
+        'description': description.trim(),
+        'category': category.trim(),
+      };
+      await ApiClient().post(ApiConstants.advisoryQuestions, payload);
+    } catch (e) {
+      debugPrint('[AdvisoryService] addQuestion remote error: $e');
+    }
   }
 }

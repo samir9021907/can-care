@@ -406,7 +406,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final farmSize = _farmSizeController.text.trim();
     final region = '$_selectedDistrict, महाराष्ट्र';
 
-    context.read<AuthProvider>().updateFarmerProfile(
+    await context.read<AuthProvider>().updateFarmerProfile(
           fullName: fullName,
           email: email,
           phone: phone,

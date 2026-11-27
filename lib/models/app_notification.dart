@@ -155,11 +155,11 @@ class AppNotification {
   factory AppNotification.fromJson(Map<String, dynamic> json) => AppNotification(
         id: json['id'] ?? '',
         title: json['title'] ?? '',
-        titleMarathi: json['titleMarathi'] ?? '',
-        titleHindi: json['titleHindi'] ?? '',
+        titleMarathi: json['titleMarathi'] ?? json['title_marathi'] ?? '',
+        titleHindi: json['titleHindi'] ?? json['title_hindi'] ?? '',
         body: json['body'] ?? '',
-        bodyMarathi: json['bodyMarathi'] ?? '',
-        bodyHindi: json['bodyHindi'] ?? '',
+        bodyMarathi: json['bodyMarathi'] ?? json['body_marathi'] ?? '',
+        bodyHindi: json['bodyHindi'] ?? json['body_hindi'] ?? '',
         category: NotificationCategory.values.firstWhere(
           (e) => e.name == json['category'],
           orElse: () => NotificationCategory.tips,
@@ -169,9 +169,9 @@ class AppNotification {
           orElse: () => NotificationImportance.normal,
         ),
         timestamp: DateTime.tryParse(json['timestamp'] ?? '') ?? DateTime.now(),
-        isRead: json['isRead'] ?? false,
-        actionRoute: json['actionRoute'],
-        actionLabel: json['actionLabel'],
-        actionLabelMarathi: json['actionLabelMarathi'],
+        isRead: json['isRead'] ?? json['is_read'] ?? false,
+        actionRoute: json['actionRoute'] ?? json['action_route'],
+        actionLabel: json['actionLabel'] ?? json['action_label'],
+        actionLabelMarathi: json['actionLabelMarathi'] ?? json['action_label_marathi'],
       );
 }

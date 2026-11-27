@@ -34,10 +34,11 @@ class RemoteDiseaseService implements DiseaseService {
     try {
       final res = await _apiClient.get(ApiConstants.diseases, queryParams: {'lang': 'en'});
       final localDiseases = DiseaseInfo.getSugarcaneDiseases();
-      if (res is Map<String, dynamic> && res['diseases'] is List) {
-        final list = (res['diseases'] as List).cast<Map<String, dynamic>>();
+      final rawList = res is List ? res : (res is Map<String, dynamic> ? res['diseases'] : null);
+      if (rawList is List) {
+        final list = rawList.cast<Map<String, dynamic>>();
         _cache = list.map((item) {
-          final code = item['disease_code']?.toString() ?? '';
+          final code = (item['code'] ?? item['disease_code'] ?? '').toString();
           final matchedLocal = localDiseases.firstWhere(
             (d) => d.id.toLowerCase() == code.toLowerCase() || d.name.toLowerCase() == (item['name'] ?? '').toString().toLowerCase(),
             orElse: () => localDiseases.first,

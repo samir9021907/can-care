@@ -316,7 +316,7 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  void updateFarmerProfile({
+  Future<void> updateFarmerProfile({
     required String fullName,
     String? email,
     String? phone,
@@ -327,7 +327,7 @@ class AuthProvider extends ChangeNotifier {
     String? sugarcaneVariety,
     String? irrigationType,
     String? plantingSeason,
-  }) {
+  }) async {
     if (_currentUser != null) {
       _currentUser = _currentUser!.copyWith(
         fullName: fullName,
@@ -356,8 +356,15 @@ class AuthProvider extends ChangeNotifier {
         plantingSeason: plantingSeason,
       );
     }
-    _persistProfileToPrefs(_currentUser!);
+    await _persistProfileToPrefs(_currentUser!);
     notifyListeners();
+
+    try {
+      final updatedRemote = await _authService.updateProfile(_currentUser!);
+      _currentUser = updatedRemote;
+      await _persistProfileToPrefs(_currentUser!);
+      notifyListeners();
+    } catch (_) {}
   }
 
 

@@ -12,6 +12,7 @@ abstract class AuthService {
   Future<UserProfile> signInWithApple();
   Future<void> sendPasswordReset(String email);
   Future<void> signOut();
+  Future<UserProfile> updateProfile(UserProfile user);
 }
 
 enum DemoAuthFailureType {
@@ -121,6 +122,12 @@ class DemoAuthService implements AuthService {
     await Future.delayed(const Duration(milliseconds: 300));
     _currentUser = null;
   }
+
+  @override
+  Future<UserProfile> updateProfile(UserProfile user) async {
+    _currentUser = user;
+    return user;
+  }
 }
 
 /// Production implementation communicating with CaneCare AI live cloud backend
@@ -137,13 +144,21 @@ class RemoteAuthService implements AuthService {
     }
 
     try {
-      final data = await _client.get(ApiConstants.me);
+      final data = await _client.get(ApiConstants.updateUser);
       if (data is Map<String, dynamic>) {
         _currentUser = _mapUserFromApi(data);
         return _currentUser;
       }
     } catch (_) {
-      return _currentUser;
+      try {
+        final data = await _client.get(ApiConstants.me);
+        if (data is Map<String, dynamic>) {
+          _currentUser = _mapUserFromApi(data);
+          return _currentUser;
+        }
+      } catch (_) {
+        return _currentUser;
+      }
     }
     return null;
   }
@@ -227,6 +242,37 @@ class RemoteAuthService implements AuthService {
     _currentUser = null;
   }
 
+  @override
+  Future<UserProfile> updateProfile(UserProfile user) async {
+    try {
+      final payload = <String, dynamic>{
+        'full_name': user.fullName,
+        'region': user.region,
+      };
+      if (user.phone != null) payload['phone'] = user.phone;
+      if (user.village != null) payload['village'] = user.village;
+      if (user.avatarPath != null) payload['avatar_path'] = user.avatarPath;
+      if (user.farmSize != null) payload['farm_size'] = user.farmSize;
+      if (user.sugarcaneVariety != null) {
+        payload['sugarcane_variety'] = user.sugarcaneVariety;
+      }
+      if (user.irrigationType != null) {
+        payload['irrigation_type'] = user.irrigationType;
+      }
+      if (user.plantingSeason != null) {
+        payload['planting_season'] = user.plantingSeason;
+      }
+
+      final data = await _client.patch(ApiConstants.updateUser, payload);
+      if (data is Map<String, dynamic>) {
+        _currentUser = _mapUserFromApi(data);
+        return _currentUser!;
+      }
+    } catch (_) {}
+    _currentUser = user;
+    return user;
+  }
+
   UserProfile _mapUserFromApi(Map<String, dynamic> json) {
     AppLanguage preferred = AppLanguage.english;
     final langStr = json['language']?.toString().toLowerCase();
@@ -238,7 +284,13 @@ class RemoteAuthService implements AuthService {
       fullName: json['full_name']?.toString() ?? 'Sugarcane Farmer',
       email: json['email']?.toString() ?? '',
       phone: json['phone']?.toString(),
-      region: 'Maharashtra Sugarcane Belt',
+      region: json['region']?.toString() ?? 'Maharashtra Sugarcane Belt',
+      village: json['village']?.toString(),
+      avatarPath: json['avatar_path']?.toString(),
+      farmSize: json['farm_size']?.toString(),
+      sugarcaneVariety: json['sugarcane_variety']?.toString(),
+      irrigationType: json['irrigation_type']?.toString(),
+      plantingSeason: json['planting_season']?.toString(),
       preferredLanguage: preferred,
       isDemoUser: false,
     );

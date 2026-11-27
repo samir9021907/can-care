@@ -25,6 +25,17 @@ class _SugarcaneMarketScreenState extends State<SugarcaneMarketScreen> {
     _mandis = SugarcaneMarketService.instance.getAllMandis();
     _selectedMandiId = widget.initialMandiId ?? _mandis.first.id;
     _lastUpdated = DateTime.now();
+    _loadLiveRates();
+  }
+
+  void _loadLiveRates() async {
+    final live = await SugarcaneMarketService.instance.fetchRemoteMandis();
+    if (mounted && live.isNotEmpty) {
+      setState(() {
+        _mandis = live;
+        _lastUpdated = DateTime.now();
+      });
+    }
   }
 
   SugarcaneMandi get _currentMandi {

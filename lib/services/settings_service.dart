@@ -1,3 +1,6 @@
+import '../constants/api_constants.dart';
+import 'api_client.dart';
+
 class NotificationPreferences {
   final bool diseaseOutbreakAlerts;
   final bool weatherForecastAlerts;
@@ -63,5 +66,44 @@ class LocalSettingsService implements SettingsService {
   }) async {
     await Future.delayed(const Duration(milliseconds: 700));
     return true;
+  }
+}
+
+class RemoteSettingsService implements SettingsService {
+  final ApiClient _apiClient = ApiClient();
+  final LocalSettingsService _localFallback = LocalSettingsService();
+
+  @override
+  Future<NotificationPreferences> getNotificationPreferences() =>
+      _localFallback.getNotificationPreferences();
+
+  @override
+  Future<void> updateNotificationPreferences(NotificationPreferences prefs) =>
+      _localFallback.updateNotificationPreferences(prefs);
+
+  @override
+  Future<bool> submitFeedback({
+    required String name,
+    required String email,
+    required String feedbackType,
+    required String message,
+  }) async {
+    try {
+      final payload = {
+        'name': name.trim(),
+        'email': email.trim().toLowerCase(),
+        'feedback_type': feedbackType,
+        'message': message.trim(),
+      };
+      final res = await _apiClient.post(ApiConstants.appFeedback, payload);
+      return res != null;
+    } catch (_) {
+      return _localFallback.submitFeedback(
+        name: name,
+        email: email,
+        feedbackType: feedbackType,
+        message: message,
+      );
+    }
   }
 }
